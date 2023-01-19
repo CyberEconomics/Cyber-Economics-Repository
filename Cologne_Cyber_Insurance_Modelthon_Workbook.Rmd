@@ -28,19 +28,26 @@ load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\d
 #Loading Solutions First Optimizaton
 load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\solution_model_1.RData")
 
+#Loading Data for premium
+load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\premiumarray")
+
+weights = SimulationresultArray[1,,,]
+
 
 #Sector Premiums Total
 total_sector_premiums = sectors_premium 
 #Functions
 sectors_expense_ratio = sectors_expense_ratio
 #Some Hard Coded Information about the Scenarios
-scneario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3)
 
+
+scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
+scenario_2_IW = c(6:15*1e3)
 #Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
 #nrow = number of reinsurers, ncol = number of insurerance companies.
 reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
 
-
+#
 
 #Dirty Plot Overall Damages of verification set
 Overall_Damages = plot(sort(colSums(verification_set)))
@@ -75,7 +82,7 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
     
         for (k in 1:num_sim_rums){
    #Get Active weights.
-           active_weight = weights[i,,k]
+           active_weight = weights[k,,i]
   
             'Calculate Return'
   returnvector <- colSums(active_weight %*% verification_set)
@@ -101,9 +108,9 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
   VaR <- returnvector[VAR_position] + VaR
   realized_result <- mean(returnvector)
   #Premiums need to be scaled down by 1000. The model premium is calculated by 
-  model_premium_without_expense_ratio = (colSums(active_weight %*% total_sector_premiums) / 1000) + model_premium_without_expense_ratio
+  model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
   #With the expenseratio added
-  implied_premiums_with_expense_ratio = model_premium_without_expense_ratio * (1+30/70) + implied_premiums_with_expense_ratio
+  implied_premiums_with_expense_ratio = model_premium_without_expense_ratio /0.7 + implied_premiums_with_expense_ratio
 probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probability_of_loss
 
     VaR_Penalty_Sum = ifelse(initial_wealth_array[i] < -VaR,1,0) + VaR_Penalty_Sum
@@ -129,8 +136,9 @@ names(output) = c("Summary Statistics", "Outcomes Long Format")
 }
 
 
-
 test_outcome2 = calculate_insurance_outcomes(Model_1_Solutions, verification_set, scneario_1_IW)
+
+test_2 = calculate_insurance_outcomes(weights, verification_set, scneario_1_IW)
 
 
 #' Calculate the outcomes from the best weights of the optimization and the respective weights of insurance companies 
@@ -162,7 +170,7 @@ calculate_reinsurance_outcomes <- function(weights, verification_set, initial_we
     
         for (k in 1:num_sim_rums){
    #Get Active weights.
-           active_weight = weights[i,,k]
+           active_weight = weights[k,,i]
   
             'Calculate Return'
   returnvector <- colSums(active_weight %*% verification_set)
@@ -201,7 +209,7 @@ probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probab
         }
     
     result_matrix[2,i] = VaR / num_sim_rums
-    result_matrix[3,i] = VaR_Penalty_Sum / num_sim_rums
+    result_matrix[3,i] = VaR_Penalty_Sum 
     result_matrix[4,i] = realized_result / num_sim_rums
     result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_rums
     result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_rums
