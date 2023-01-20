@@ -129,23 +129,6 @@ names(output) = c("Summary_Statistics", "Outcomes_Long_Format")
 
 
 
-```{r}
-df_to_plot = test_outcome2$Outcomes_Long_Format
-for(IW in unique(test_outcome2$Outcomes_Long_Format$Initial_Wealth)){
-p = ggplot()
-colors = c("red","blue","green","yellow","black")
-for(simu_nb in seq(1,5)){
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(Profit)
-p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
-}
-#ggsave(paste0("./IW_",IW,".png"),p)
-print(p)
-}
-
-
-```
-
-
 
 ```{r}
 #' Calculate the outcomes from the best weights of the optimization and the respective weights of insurance companies 
@@ -345,6 +328,25 @@ capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
 #Filter Output of Reinsurers
 filter_down_reinsurance_outcomes = data.frame(test_outcome2[[2]][[2]]) %>% filter(Number_RC == "1")
 ```
+
+
+
+```{r}
+df_to_plot = test_outcome1$Outcomes_Long_Format
+for(IW in unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+for(simu_nb in seq(1,5)){
+  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(Profit)
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
+}
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
+
+
+```
+
 
 
 
