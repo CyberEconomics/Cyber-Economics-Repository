@@ -19,18 +19,20 @@ library(tidyverse)
 library(formattable)
 library(actuar)
 
+wd = getwd()
+
 
 #Loading DAmage, Premium and Expense Ratio Data
-load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\Input_Data_Modelthon.RData")
+load(paste0(wd,"/data/Input_Data_Modelthon.RData"))
 
 #Loading Solutions First Optimizaton
-load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\solution_model_1.RData")
+load(paste0(wd,"/data/solution_model_1.RData"))
 
 #Loading Data for Second Optimization
-load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\solution_model_2.RData")
+load(paste0(wd,"/data/solution_model_2.RData"))
 
 #Loading Data for premium
-load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\premiumarray.RData")
+load(paste0(wd,"/data/premiumarray.RData"))
 
 
 
@@ -123,6 +125,24 @@ output = list(result_matrix,statistical_distributions)
 names(output) = c("Summary_Statistics", "Outcomes_Long_Format")
   return(output)
 }
+```
+
+
+
+```{r}
+df_to_plot = test_outcome2$Outcomes_Long_Format
+for(IW in unique(test_outcome2$Outcomes_Long_Format$Initial_Wealth)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+for(simu_nb in seq(1,5)){
+  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(Profit)
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
+}
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
+
+
 ```
 
 
@@ -282,6 +302,11 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
 return(final_output)
 }
 ```
+
+
+
+
+
 
 
 ```{r}
