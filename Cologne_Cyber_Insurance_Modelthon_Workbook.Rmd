@@ -349,8 +349,6 @@ print(p)
 
 
 
-
-
 ```{r}
 #New Functions
 
