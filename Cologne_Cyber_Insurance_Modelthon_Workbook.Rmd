@@ -3,19 +3,17 @@ title: "Cyber Insurance Modelthon Workbook"
 output: html_notebook
 ---
 
-
 ```{r eval=FALSE, include=FALSE}
 ###Run this chunk once manually in the beginnig to install the necessary packages
-install.packages("qs")
-install.packages("data.table")
-install.packages("tidyverse")
-install.packages("formattable")
-install.packages("actuar")
+
+require("data.table")
+require("tidyverse")
+require("formattable")
+require("actuar")
 ```
 
 ```{r}
 #Libraries
-library(qs)
 library(data.table)
 library(tidyverse)
 library(formattable)
@@ -28,11 +26,31 @@ load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\d
 #Loading Solutions First Optimizaton
 load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\solution_model_1.RData")
 
+#Loading Data for Second Optimization
+load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\solution_model_2.RData")
+
 #Loading Data for premium
 load("C:\\Users\\Daniel\\Documents\\GitHub\\Cologne-Cyber-Insurance-Modelthon\\data\\premiumarray.RData")
+
+
+
+
+
+#Hardcoded IW-Arrays
+scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
+scenario_2_IW = c(6:15*1e3)
 ```
 
 ```{r}
+#' Calculate the outcomes from the best weights of the optimization and the respective weights of insurance companies 
+#'
+#' @author Daniel Kasper <daniel.kasper@@cyber-economics.com>
+#'
+#' @param weights 2-Dimensional Array with the outcomes of main simulation or manually set weights. Needs to be fed all Insurance Companies for a given model.
+#' @param verification_Set Verification set with "fresh" data to verifiy to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
+#' @output Returns a list with the VaR, average return, many more summary statistics and a data.frame with the outcomes in the long (=dplyr & ggplot2 friendly) format.
+#'
+
 calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth_array){
   #Get Result Dimensions from the dimension of the weight
   num_IC =  dim(weights)[3]
@@ -269,9 +287,7 @@ return(final_output)
 ```{r}
 #Start Analysis
 
-#Hardcoded IW-Arrays
-scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
-scenario_2_IW = c(6:15*1e3)
+
 
 #Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
 #nrow = number of reinsurers, ncol = number of insurerance companies.
@@ -280,7 +296,28 @@ reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
 test_outcome1 = calculate_insurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW)
 test_outcome2 = calculate_reinsurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW, reinsurance_matrix_1)
 
+#Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
 
+#Dimension of capital curve, first is number of IW_setups, which gives us the duartion of the loop We need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value.
+
+
+dim_cc = dim(capital_curve)[[1]]
+capital_curve_pseudo_array = array(dim = c(dim(capital_curve)[[2]],dim(capital_curve)[[3]],2)) 
+
+capital_curve_overview = matrix(nrow = 7, ncol = dim_cc)
+
+for (i in 1:dim_cc){
+  #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
+  capital_curve_pseudo_array[,,1] = capital_curve[i,,,]
+  capital_curve_pseudo_array[,,2] = capital_curve[i,,,]
+  current_values_cc = calculate_insurance_outcomes(capital_curve_pseudo_array, verification_set, scenario_2_IW[i])
+capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
+  
+}
+
+
+
+#Filter Output of Reinsurers
 filter_down_reinsurance_outcomes = data.frame(test_outcome2[[2]][[2]]) %>% filter(Number_RC == "1")
 ```
 
