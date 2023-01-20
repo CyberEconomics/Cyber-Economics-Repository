@@ -35,13 +35,16 @@ load(paste0(wd,"/data/solution_model_2.RData"))
 load(paste0(wd,"/data/premiumarray.RData"))
 
 
-
+load(paste0(wd,"/data/71-buckets.RData"))
 
 
 #Hardcoded IW-Arrays
 scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_2_IW = c(6:15*1e3)
 ```
+
+
+
 
 ```{r}
 #' Calculate the outcomes from the best weights of the optimization and the respective weights of insurance companies 
@@ -292,6 +295,7 @@ return(final_output)
 
 
 
+
 ```{r}
 #Start Analysis
 
@@ -331,6 +335,8 @@ filter_down_reinsurance_outcomes = data.frame(test_outcome2[[2]][[2]]) %>% filte
 
 
 
+
+
 ```{r}
 df_to_plot = test_outcome1$Outcomes_Long_Format
 for(IW in unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth)){
@@ -347,7 +353,24 @@ print(p)
 
 ```
 
+```{r}
+library(reshape)
+df_to_plot = test_outcome1$Outcomes_Long_Format
+df_to_plot = df_to_plot
+df_to_plot
+```
 
+
+```{r}
+df_to_plot = test_outcome1$Outcomes_Long_Format
+df_melted = melt(df_to_plot,id=c("Profit"))
+df_melted
+```
+
+
+```{r}
+ggplot(df_melted) + geom_line(aes(y=value,x=seq(1,32000),color = Initial_Wealth))
+```
 
 
 
@@ -369,31 +392,21 @@ print(p)
 ```
 
 
-```{r}
-df_to_plot = test_outcome1$Outcomes_Long_Format
-df_to_plot
-```
 
-
-```{r}
-test_outcome2
-```
 
 
 
 ```{r}
 df_to_plot = test_outcome2$`Reinsurance Outcomes`[[2]]
 ```
+
+
+
+
+
 ```{r}
-df$`Damage_Year/Epoch`
+read.csv("C:/Users/yousra.cherkaoui/OneDrive - Milliman/Documents/cyber/Code/cologne_modelthon/Cologne-Cyber-Insurance-Modelthon/data/71-buckets.RData", header=TRUE, sep= " ")
 ```
-
-
-```{r}
-df = df_to_plot[df_to_plot$Number_RC== 1,]%>% filter(Simulation_Number == 1)%>% filter(`Damage_Year/Epoch`== 1)
-df
-```
-
 
 
 
