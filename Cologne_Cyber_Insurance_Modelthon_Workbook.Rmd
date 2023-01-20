@@ -34,7 +34,8 @@ load(paste0(wd,"/data/solution_model_2.RData"))
 #Loading Data for premium
 load(paste0(wd,"/data/premiumarray.RData"))
 
-
+#Industrsy-Segment Combinations EV,
+load(paste0(wd,"/data/71-buckets.RData"))
 
 
 
