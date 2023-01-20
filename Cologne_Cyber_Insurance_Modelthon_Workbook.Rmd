@@ -378,25 +378,22 @@ feasibility_analayis_insurance_reinsurance
 #' @param verification_Set Verification set with "fresh" data to verifiy to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
 #' 
 #'
-
-plot_outcomes_insurance <- function(total_outcomes){
-  
-}
-
-plot_outcomes_insurance_reinsurance <- function(total_outcomes){
-  
-}
-
-plot_outcomes_insurance_reinsurance_ILS <- function(total_outcomes){
-  
-}
-
-plot_outcomes_insurance_reinsurance_ILS_PPP <- function(total_outcomes){
-  
-}
-
-
-
 ```
+
+
+```{r}
+df_to_plot = test_outcome1$Outcomes_Long_Format
+for(IW in unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+for(simu_nb in seq(1,5)){
+  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(Profit)
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
+}
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
+```
+
 
 
