@@ -35,12 +35,19 @@ load(paste0(wd,"/data/solution_model_2.RData"))
 load(paste0(wd,"/data/premiumarray.RData"))
 
 load(paste0(wd,"/data/71-buckets.RData"))
-
+#Load Data constrained Optimization
+load(paste0(wd,"/data/71-buckets.RData"))
 
 
 #Hardcoded IW-Arrays
 scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_2_IW = c(6:15*1e3)
+scenario_3_constrained_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
+
+#More Information:
+#Scenario 1: Standard Optimization, No Constraints
+#Scenario 2: One Insurer per 
+#Scenario 3: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med
 ```
 
 
