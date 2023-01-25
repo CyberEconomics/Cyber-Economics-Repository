@@ -42,7 +42,7 @@ load(paste0(wd,"/data/71-buckets.RData"))
 #Hardcoded IW-Arrays
 scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_2_IW = c(6:15*1e3)
-scenario_3_constrained_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
+scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 
 #More Information:
 #Scenario 1: Standard Optimization, No Constraints
@@ -334,6 +334,10 @@ capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
   
 }
 
+#Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med
+
+
+scenario_3_results = calculate_reinsurance_outcomes(constrained_optimization_results[1,,,], verification_set_new, scenario_3_IW, reinsurance_matrix_1)
 
 
 #Filter Output of Reinsurers
