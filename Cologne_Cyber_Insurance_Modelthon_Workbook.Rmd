@@ -306,7 +306,7 @@ return(final_output)
 #' @param reinsurance_matrix A Reinsurance matrix with number of insurance companies equal to the columns 
 #' @output Returns a list with tons of good stuff!
 #'
-calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix,bond_value_array,target_sharpe_ratio){
+calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix,bond_value_array,target_sharpe_ratio, risk_free_rate){
    #Code Equal to insurance_outcomes function at the end.
   num_IC =  dim(weights)[3]
   num_sim_rums =  dim(weights)[1]
@@ -467,19 +467,32 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
  bond_outcomes =  statistical_distributions_reinsurance %>% left_join(reinsurance_var_array, by = c("Number_RC" = "Number_RC"), copy = T) %>% left_join(bond_value_array, by = c("Number_RC" = "Number_RC"), copy = T)
 
 
- #Filter down all outcomes to only the ones violating the respctive VAR-border and calculate excess loss payout & residual (=PPP Scheme)
- bond_outcomes = bond_outcomes %>% ungroup() %>% filter(as.numeric(Profit) < VAR99.5) %>% mutate(
-   excess_var_loss = VAR99.5 - as.numeric(Profit),
-   bond_loss = iflese(excess_var_loss > Cyber_Bond_Value, Cyber_Bond_Value,excess_var_loss)
+ #Calculate excess loss payout & residual (=PPP Scheme)
+ bond_outcomes = bond_outcomes %>% group_by(Number_RC) %>% mutate(
+   excess_var_loss = ifelse(VAR99.5 - as.numeric(Profit) > 0,VAR99.5 - as.numeric(Profit),0),
+   bond_loss = ifelse(excess_var_loss > Cyber_Bond_Value, Cyber_Bond_Value,excess_var_loss),
    excess_uninsured_loss = excess_var_loss - bond_loss
  )
+#Calculate Bond Expected Losses. To get the EVs, group by the respectice Reinsurer (1 bond for 1 #reinsurer) and divide the sum of bond_losses by the number of simulation runs times the sample size
+# of the verification set (32k).
+
+ 
+ bond_statistics = bond_outcomes %>% group_by(Number_RC) %>% summarize(
+ expected_loss_bonds = sum(bond_loss)/(num_sim_rums*n_runs),
+ variance_loss_bonds = var(bond_loss),
+ #Target Sharpe Ratio solves for coupon payments = TRSR * VAR + EV(Return) + Risk Free Rate
+ coupon_payment = target_sharpe_ratio * variance_loss_bonds + expected_loss_bonds + risk_free_rate
+ )
+ 
+ summary_statistics_bonds <- data.frame(matrix(ncol = num_rc, nrow = 8))
+ summary_statistics_bonds[1:3,1:num_rc] = bond_statistics[,2:4]
+
+
+
  
  
  
- 
- 
- 
- final_output = list(output_insurance,output_reinsurance,bond_outcomes)
+ final_output = list(output_insurance,output_reinsurance,bond_statistics,summary_statistics_bonds)
  names(final_output) = list("Insurance Outcomes", "Reinsurance Outcomes")
 
 
@@ -533,7 +546,7 @@ scenario_3_results = calculate_reinsurance_outcomes(constrained_optimization_res
 
 bond_value_array = c(21,10.5,5.25,2.6) 
 
-scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimization_results[1,,,], verification_set_new, scenario_3_IW, reinsurance_matrix_1,bond_value_array,2)
+scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimization_results[1,,,], verification_set_new, scenario_3_IW, reinsurance_matrix_1,bond_value_array,2, 0.02)
 
 
 #Filter Output of Reinsurers
