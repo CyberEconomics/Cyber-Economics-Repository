@@ -472,6 +472,7 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
    excess_var_loss = ifelse(VAR99.5 - as.numeric(Profit) > 0,VAR99.5 - as.numeric(Profit),0),
    bond_loss = ifelse(excess_var_loss > Cyber_Bond_Value, Cyber_Bond_Value,excess_var_loss),
    excess_uninsured_loss = excess_var_loss - bond_loss,
+  
    
  )
 #Calculate Bond Expected Losses. To get the EVs, group by the respectice Reinsurer (1 bond for 1 #reinsurer) and divide the sum of bond_losses by the number of simulation runs times the sample size
@@ -486,19 +487,17 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
  coupon_payment = target_sharpe_ratio * variance_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
  Return_On_Equity_Investors = coupon_payment/mean(Cyber_Bond_Value),
  sum_uninsured_losses =  sum(excess_uninsured_loss)/(num_sim_runs*n_runs),
- Probability_of_bond_payout = count(bond_loss > 0)/(num_sim_runs*n_runs),
- Probability_of_excess_loss = count(sum_uninsured_losses > 0)/(num_sim_runs*n_runs),
+ Probability_of_bond_payout = ifelse(bond_loss > 0,1,0)/(num_sim_runs*n_runs),
+ Probability_of_excess_loss = ifelse(excess_uninsured_loss > 0,1,0)/(num_sim_runs*n_runs)
  )
- #Create the summary Statistics for the ILS-Investors and Excess losses.
- summary_statistics_bonds <- data.frame(matrix(ncol = num_rc, nrow = 8))
- summary_statistics_bonds[1:4,1:num_rc] = bond_statistics[,1:4]
+
 
 
 
  
  
  
- final_output = list(output_insurance,output_reinsurance,bond_outcomes,bond_statistics,summary_statistics_bonds)
+ final_output = list(output_insurance,output_reinsurance,bond_outcomes,bond_statistics)
  names(final_output) = list("Insurance Outcomes", "Reinsurance Outcomes")
 
 
