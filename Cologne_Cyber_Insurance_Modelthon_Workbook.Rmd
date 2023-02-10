@@ -66,7 +66,7 @@ scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3)
 calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth_array){
   #Get Result Dimensions from the dimension of the weight
   num_IC =  dim(weights)[3]
-  num_sim_rums =  dim(weights)[1]
+  num_sim_runs =  dim(weights)[1]
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
@@ -81,7 +81,7 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
     VaR_Penalty_Sum = 0
     probability_of_loss = 0
     
-        for (k in 1:num_sim_rums){
+        for (k in 1:num_sim_runs){
    #Get Active weights.
            active_weight = weights[k,,i]
   
@@ -121,12 +121,12 @@ probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probab
     #End Inner Loop
         }
     
-    result_matrix[2,i] = VaR / num_sim_rums
-    result_matrix[3,i] = VaR_Penalty_Sum / num_sim_rums
-    result_matrix[4,i] = realized_result / num_sim_rums
-    result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_rums
-    result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_rums
-    result_matrix[7,i] = probability_of_loss / num_sim_rums
+    result_matrix[2,i] = VaR / num_sim_runs
+    result_matrix[3,i] = VaR_Penalty_Sum / num_sim_runs
+    result_matrix[4,i] = realized_result / num_sim_runs
+    result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_runs
+    result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_runs
+    result_matrix[7,i] = probability_of_loss / num_sim_runs
      
     
   }
@@ -153,7 +153,7 @@ names(output) = c("Summary_Statistics", "Outcomes_Long_Format")
 calculate_reinsurance_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix){
    #Code Equal to insurance_outcomes function at the end.
   num_IC =  dim(weights)[3]
-  num_sim_rums =  dim(weights)[1]
+  num_sim_runs =  dim(weights)[1]
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
@@ -168,7 +168,7 @@ calculate_reinsurance_outcomes <- function(weights, verification_set, initial_we
     VaR_Penalty_Sum = 0
     probability_of_loss = 0
     
-        for (k in 1:num_sim_rums){
+        for (k in 1:num_sim_runs){
    #Get Active weights.
            active_weight = weights[k,,i]
   
@@ -208,12 +208,12 @@ probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probab
     #End Inner Loop
         }
     
-    result_matrix[2,i] = VaR / num_sim_rums
+    result_matrix[2,i] = VaR / num_sim_runs
     result_matrix[3,i] = VaR_Penalty_Sum 
-    result_matrix[4,i] = realized_result / num_sim_rums
-    result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_rums
-    result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_rums
-    result_matrix[7,i] = probability_of_loss / num_sim_rums
+    result_matrix[4,i] = realized_result / num_sim_runs
+    result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_runs
+    result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_runs
+    result_matrix[7,i] = probability_of_loss / num_sim_runs
     
    
     
@@ -248,7 +248,7 @@ reinsurance_outcomes = statistical_distributions %>%  ungroup() %>% left_join(re
     Primary_Premium_Share =  0 
     probability_of_loss = 0
  
-for(k in 1:num_sim_rums){
+for(k in 1:num_sim_runs){
 reinsurance_return_vector = sort(reinsurance_outcomes[[k]][["reinsurance_epoch_loss"]])
 
 #Write Reinsurance Outcomes to Data, fit to reinsurance
@@ -276,11 +276,11 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
     for (j in 1:num_IC){
     reinsurance_premium_share = reinsurance_matrix[i,j] * output_insurance[[1]][5,j] + reinsurance_premium_share
     }
-    reinsurance_result_matrix[1,i] = VaR / num_sim_rums
-    reinsurance_result_matrix[2,i] = realized_result / num_sim_rums
+    reinsurance_result_matrix[1,i] = VaR / num_sim_runs
+    reinsurance_result_matrix[2,i] = realized_result / num_sim_runs
     reinsurance_result_matrix[3,i] = reinsurance_premium_share
     reinsurance_result_matrix[4,i] = reinsurance_premium_share / 0.7
-    reinsurance_result_matrix[5,i] = probability_of_loss / num_sim_rums
+    reinsurance_result_matrix[5,i] = probability_of_loss / num_sim_runs
 
 
 }
@@ -309,7 +309,7 @@ return(final_output)
 calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix,bond_value_array,target_sharpe_ratio, risk_free_rate){
    #Code Equal to insurance_outcomes function at the end.
   num_IC =  dim(weights)[3]
-  num_sim_rums =  dim(weights)[1]
+  num_sim_runs =  dim(weights)[1]
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
@@ -324,7 +324,7 @@ calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initia
     VaR_Penalty_Sum = 0
     probability_of_loss = 0
     
-        for (k in 1:num_sim_rums){
+        for (k in 1:num_sim_runs){
    #Get Active weights.
            active_weight = weights[k,,i]
   
@@ -364,12 +364,12 @@ probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probab
     #End Inner Loop
         }
     
-    result_matrix[2,i] = VaR / num_sim_rums
+    result_matrix[2,i] = VaR / num_sim_runs
     result_matrix[3,i] = VaR_Penalty_Sum 
-    result_matrix[4,i] = realized_result / num_sim_rums
-    result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_rums
-    result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_rums
-    result_matrix[7,i] = probability_of_loss / num_sim_rums
+    result_matrix[4,i] = realized_result / num_sim_runs
+    result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_runs
+    result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_runs
+    result_matrix[7,i] = probability_of_loss / num_sim_runs
     
    
     
@@ -387,7 +387,7 @@ num_rc = nrow(reinsurance_matrix)
 
   reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = 5))
   #Write Initial Capital 
-  rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP2000)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
+  rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP200)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
 
 for (i in 1:num_rc){
 
@@ -404,16 +404,16 @@ reinsurance_outcomes = statistical_distributions %>%  ungroup() %>% left_join(re
     Primary_Premium_Share =  0 
     probability_of_loss = 0
  
-for(k in 1:num_sim_rums){
+for(k in 1:num_sim_runs){
 reinsurance_return_vector = sort(reinsurance_outcomes[[k]][["reinsurance_epoch_loss"]])
 
 #Write Reinsurance Outcomes to Data, fit to reinsurance
 
         if(i*k == 1){ 
-       statistical_distributions_reinsurance =    as.data.frame(cbind(returnvector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+       statistical_distributions_reinsurance =    as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(statistical_distributions_reinsurance) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC")   
     } else {
-      new_rows = as.data.frame(cbind(returnvector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+      new_rows = as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(new_rows) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC") 
       statistical_distributions_reinsurance = rbind(statistical_distributions_reinsurance, new_rows)
       
@@ -432,11 +432,11 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
     for (j in 1:num_IC){
     reinsurance_premium_share = reinsurance_matrix[i,j] * output_insurance[[1]][5,j] + reinsurance_premium_share
     }
-    reinsurance_result_matrix[1,i] = VaR / num_sim_rums
-    reinsurance_result_matrix[2,i] = realized_result / num_sim_rums
+    reinsurance_result_matrix[1,i] = VaR / num_sim_runs
+    reinsurance_result_matrix[2,i] = realized_result / num_sim_runs
     reinsurance_result_matrix[3,i] = reinsurance_premium_share
     reinsurance_result_matrix[4,i] = reinsurance_premium_share / 0.7
-    reinsurance_result_matrix[5,i] = probability_of_loss / num_sim_rums
+    reinsurance_result_matrix[5,i] = probability_of_loss / num_sim_runs
 
 
 }
@@ -468,7 +468,7 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
 
 
  #Calculate excess loss payout & residual (=PPP Scheme)
- bond_outcomes = bond_outcomes %>% group_by(Number_RC) %>% mutate(
+ bond_outcomes = bond_outcomes %>% group_by() %>% mutate(
    excess_var_loss = ifelse(VAR99.5 - as.numeric(Profit) > 0,VAR99.5 - as.numeric(Profit),0),
    bond_loss = ifelse(excess_var_loss > Cyber_Bond_Value, Cyber_Bond_Value,excess_var_loss),
    excess_uninsured_loss = excess_var_loss - bond_loss
@@ -478,7 +478,7 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
 
  
  bond_statistics = bond_outcomes %>% group_by(Number_RC) %>% summarize(
- expected_loss_bonds = sum(bond_loss)/(num_sim_rums*n_runs),
+ expected_loss_bonds = sum(bond_loss)/(num_sim_runs*n_runs),
  variance_loss_bonds = var(bond_loss),
  #Target Sharpe Ratio solves for coupon payments = TRSR * VAR + EV(Return) + Risk Free Rate
  coupon_payment = target_sharpe_ratio * variance_loss_bonds + expected_loss_bonds + risk_free_rate
@@ -492,7 +492,7 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
  
  
  
- final_output = list(output_insurance,output_reinsurance,bond_statistics,summary_statistics_bonds)
+ final_output = list(output_insurance,output_reinsurance,bond_outcomes,bond_statistics,summary_statistics_bonds)
  names(final_output) = list("Insurance Outcomes", "Reinsurance Outcomes")
 
 
