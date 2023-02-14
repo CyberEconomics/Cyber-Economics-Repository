@@ -690,17 +690,22 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
 # of the verification set (32k).
 
  
- bond_statistics = bond_outcomes %>% group_by(Number_RC) %>% summarize(
+ bond_statistics = bond_outcomes %>% ungroup() %>% group_by(Number_RC) %>% summarize(
+   Cyber_Bond_Value = mean(Cyber_Bond_Value),
  absolute_expected_loss_bonds = sum(bond_loss)/(num_sim_runs*n_runs),
- relative_expected_loss = absolute_expected_loss_bonds/mean(Cyber_Bond_Value),
+ relative_expected_loss = mean(absolute_expected_loss_bonds/Cyber_Bond_Value),
  variance_loss_bonds = var(bond_loss),
  #Target Sharpe Ratio solved for coupon payments = TRSR * VAR + EV(Return) + Risk Free Rate
- coupon_payment = target_sharpe_ratio * variance_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
- Return_On_Equity_Investors = coupon_payment/mean(Cyber_Bond_Value),
- sum_uninsured_losses =  sum(excess_uninsured_loss)/(num_sim_runs*n_runs),
- Probability_of_bond_payout = ifelse(bond_loss > 0,1,0)/(num_sim_runs*n_runs),
- Probability_of_excess_loss = ifelse(excess_uninsured_loss > 0,1,0)/(num_sim_runs*n_runs)
+coupon_payment = target_sharpe_ratio * variance_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
+Return_On_Equity_Investors = coupon_payment/Cyber_Bond_Value,
+sum_uninsured_losses =  sum(excess_uninsured_loss)/(num_sim_runs*n_runs),
+Attatchment_Probability_Bond = sum(ifelse(bond_loss > 0,1,0))/(num_sim_runs*n_runs),
+Probability_of_excess_loss = sum(ifelse(excess_uninsured_loss > 0,1,0))/(num_sim_runs*n_runs)
  )
+
+
+
+
 
 
 
@@ -708,7 +713,7 @@ ILS_output = list(bond_statistics,bond_outcomes)
  
  
  
- final_output = list(output_insurance,output_reinsurance,bond_outcomes,ILS_output)
+ final_output = list(output_insurance,output_reinsurance,ILS_output)
  names(final_output) = list("Insurance Outcomes", "Reinsurance Outcomes", "ILS Outcomes")
 
 
