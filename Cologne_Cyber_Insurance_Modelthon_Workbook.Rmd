@@ -686,6 +686,11 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
   
    
  )
+#Rename VAR with the Correct VaR that is used.
+ 
+adjusted_Var_name = paste0("VAR",VaR_Position_ILS*100)
+names(bond_outcomes)[names(bond_outcomes) == 'VAR99.5'] <- "adjusted_Var_name" 
+ 
 #Calculate Bond Expected Losses. To get the EVs, group by the respectice Reinsurer (1 bond for 1 #reinsurer) and divide the sum of bond_losses by the number of simulation runs times the sample size
 # of the verification set (32k).
 
@@ -764,9 +769,9 @@ scenario_3_results = calculate_reinsurance_outcomes(constrained_optimization_res
 
 #ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
 
-bond_value = c(21,10.5,5.25,2.6) 
+bond_value_array = c(21,10.5,5.25,2.6) 
 
-scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimization_results[1,,,], verification_set_new, scenario_3_IW, reinsurance_matrix_1,bond_value,1, 0.02)
+scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimization_results[1,,,], verification_set_new, scenario_3_IW, reinsurance_matrix_1,bond_value_array,1, 0.02)
 
 
 #ILS Outcomes with Reinsurance Outcomes
@@ -778,12 +783,11 @@ filter_down_reinsurance_outcomes = data.frame(test_outcome2[[2]][[2]]) %>% filte
 ```
 
 
-
-
-
 ```{r}
-df_to_plot = test_outcome1$Outcomes_Long_Format
-for(IW in unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth)){
+#Graphic Functions
+plot_insurance_distributions <- function(insurance_object){
+df_to_plot = insurance_object[[1]][[2]]
+for(IW in unique(df_to_plot$Initial_Wealth)){
 p = ggplot()
 colors = c("red","blue","green","yellow","black")
 for(simu_nb in seq(1,5)){
@@ -793,8 +797,47 @@ p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,len
 #ggsave(paste0("./IW_",IW,".png"),p)
 print(p)
 }
+}
+```
+
+```{r}
+#Graphic Functions
+plot_reinsurance_distributions <- function(insurance_object){
+df_to_plot = insurance_object[[2]][[2]]
+for(num_RC in unique(df_to_plot$Number_RC)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+for(simu_nb in seq(1,5)){
+  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Number_RC == num_RC) %>% arrange(as.numeric(Profit))
+
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(Profit),x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for given RC"))+ xlab(" ") 
+}
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
+}
+```
+
+```{r}
+df_to_plot = test_outcome1$Outcomes_Long_Format
+for(IW in unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+for(simu_nb in seq(1,5)){
+  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(as.numeric(Profit))
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(Profit),x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
+}
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
 
 
+```
+
+```{r}
+#Start Graphics
+plot_insurance_distributions(scenario_3_results_ils_RP100)
+plot_reinsurance_distributions(scenario_3_results_ils_RP100)
 ```
 
 ```{r}
