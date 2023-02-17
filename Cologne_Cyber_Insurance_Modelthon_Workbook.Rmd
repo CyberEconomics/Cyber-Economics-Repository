@@ -809,10 +809,10 @@ colnames(values)[ncol(values)] <- "Number_RC"
 
 colors = c("red","blue","green","yellow","black")
 
-browser()
+
 p = ggplot(data = values) + geom_bar(aes(y=as.numeric(`Initial Wealth (IW)`),x=(1)), stat="identity")
 
-p = p + geom_bar(aes(y=as.numeric(get(names(values)[2]))*(-1),x=(1)), stat="identity",width=.5, position = "dodge") + facet_grid(. ~Number_RC) 
+p = p + geom_bar(aes(y=as.numeric(get(names(values)[2]))*(-1),x=(2)), stat="identity",width=.5, position = "dodge") + facet_grid(. ~Number_RC) 
 
 
 #ggsave(paste0("./IW_",IW,".png"),p)
@@ -864,7 +864,6 @@ plot_reinsurance_distributions(scenario_3_results_ils_RP100)
 plot_insurance_summary_statistics(scenario_3_results_ils_RP100)
 
 
-p = p + theme_bw() + geom_bar(data = values,aes(y=as.numeric(`Initial Wealth (IW)`),x=(Number_RC),color = colors[Number_RC], stat='identity', label = paste0("Summary Statistics",str(simu_nb)))) + ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
 
 ```
 
