@@ -70,7 +70,7 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
-  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP2000)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Implied Expense Ratio", "Avg. Probability of Loss" )
+  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Implied Expense Ratio", "Avg. Probability of Loss" )
   n_runs =  ncol(verification_set)
   for (i in 1:num_IC){
     
@@ -313,7 +313,7 @@ calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initia
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
-  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP2000)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
+  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
   n_runs =  ncol(verification_set)
   for (i in 1:num_IC){
     
@@ -523,7 +523,7 @@ calculate_reinsurance_ils_hypothetical_bond_outcome <- function(weights, verific
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
-  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP2000)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
+  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
   n_runs =  ncol(verification_set)
   for (i in 1:num_IC){
     
@@ -798,6 +798,27 @@ p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,len
 print(p)
 }
 }
+
+#Plot Graph for Summary Statistics
+plot_insurance_summary_statistics <- function(insurance_object){
+#Transpose and Shape the Summary Statistics to plot
+df_to_plot = as.data.frame(t(insurance_object[[1]][[1]]))
+values = cbind(df_to_plot,1:nrow(df_to_plot))  
+colnames(values)[ncol(values)] <- "Number_RC"
+
+
+colors = c("red","blue","green","yellow","black")
+
+browser()
+p = ggplot(data = values) + geom_bar(aes(y=as.numeric(`Initial Wealth (IW)`),x=(1)), stat="identity")
+
+p = p + geom_bar(aes(y=as.numeric(get(names(values)[2]))*(-1),x=(1)), stat="identity",width=.5, position = "dodge") + facet_grid(. ~Number_RC) 
+
+
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+
+}
 ```
 
 ```{r}
@@ -808,8 +829,10 @@ for(num_RC in unique(df_to_plot$Number_RC)){
 p = ggplot()
 colors = c("red","blue","green","yellow","black")
 for(simu_nb in seq(1,5)){
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Number_RC == num_RC) %>% arrange(as.numeric(Profit))
+  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Number_RC == num_RC) %>% arrange(Profit)
 
+
+  
 p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(Profit),x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for given RC"))+ xlab(" ") 
 }
 #ggsave(paste0("./IW_",IW,".png"),p)
@@ -838,6 +861,11 @@ print(p)
 #Start Graphics
 plot_insurance_distributions(scenario_3_results_ils_RP100)
 plot_reinsurance_distributions(scenario_3_results_ils_RP100)
+plot_insurance_summary_statistics(scenario_3_results_ils_RP100)
+
+
+p = p + theme_bw() + geom_bar(data = values,aes(y=as.numeric(`Initial Wealth (IW)`),x=(Number_RC),color = colors[Number_RC], stat='identity', label = paste0("Summary Statistics",str(simu_nb)))) + ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
+
 ```
 
 ```{r}
