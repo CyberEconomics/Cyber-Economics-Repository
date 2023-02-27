@@ -18,6 +18,7 @@ library(data.table)
 library(tidyverse)
 library(formattable)
 library(actuar)
+library(forcats)
 
 wd = getwd()
 
@@ -803,19 +804,21 @@ print(p)
 plot_insurance_summary_statistics <- function(insurance_object){
 #Transpose and Shape the Summary Statistics to plot
 df_to_plot = as.data.frame(t(insurance_object[[1]][[1]]))
+#Transform VaR to Positive
+df_to_plot[, "Avg. VaR 99.5% (RP200)"] = df_to_plot[, "Avg. VaR 99.5% (RP200)"] * -1
 values = cbind(df_to_plot,1:nrow(df_to_plot))  
 colnames(values)[ncol(values)] <- "Number_RC"
-
+values = pivot_longer(values, cols = c("Initial Wealth (IW)","Avg. VaR 99.5% (RP200)","Model Premium", "Avg. Profit", "Premium with Expense Ratio"))
 
 colors = c("red","blue","green","yellow","black")
-
-
-p = ggplot(data = values) + geom_bar(aes(y=as.numeric(`Initial Wealth (IW)`),x=(1)), stat="identity")
-
-p = p + geom_bar(aes(y=as.numeric(get(names(values)[2]))*(-1),x=(2)), stat="identity",width=.5, position = "dodge") + facet_grid(. ~Number_RC) 
-
-
+#Meltdown the to the long format. Add a dummy variable "type" to map the different outputs of the transformation to the to be graphed data.
+#First mutate call is from the ForCats package to give custom order for the graph
+p = values %>% ggplot( aes(fill=name, y=value, x=1)) + 
+    geom_bar(position="dodge", stat="identity") + xlab("")+ facet_grid(. ~Number_RC) 
 #ggsave(paste0("./IW_",IW,".png"),p)
+#Rearrange Function: 
+#mutate(name = fct_relevel( 
+#            "Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)","Premium with #Expense Ratio", "Model Premium", "Avg. Profit" ))
 print(p)
 
 }
