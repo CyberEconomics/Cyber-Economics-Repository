@@ -766,7 +766,7 @@ capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
 #Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med
 
 
-scenario_3_results = calculate_reinsurance_outcomes(constrained_optimization_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1)
+scenario_3_results = calculate_reinsurance_outcomes(constrained_optimization_results[1,,,], verification_set_new, scenario_3_IW, reinsurance_matrix_1)
 
 #ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
 
@@ -779,8 +779,6 @@ scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimiza
 
 scenario_3_results_ils_RP100 = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_optimization_results[1,,,], verification_set_new, scenario_3_IW, reinsurance_matrix_1,bond_value,1, 0.02,.99)
 
-#Filter Output of Reinsurers
-filter_down_reinsurance_outcomes = data.frame(test_outcome2[[2]][[2]]) %>% filter(Number_RC == "1")
 ```
 
 
@@ -831,38 +829,26 @@ df_to_plot = insurance_object[[2]][[2]]
 for(num_RC in unique(df_to_plot$Number_RC)){
 p = ggplot()
 colors = c("red","blue","green","yellow","black")
-for(simu_nb in seq(1,5)){
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Number_RC == num_RC) %>% arrange(Profit)
+
+  df_to_plot_simu_1= df_to_plot %>% filter(Number_RC == num_RC) %>% arrange(as.numeric(Profit))
 
 
   
 p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(Profit),x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for given RC"))+ xlab(" ") 
-}
+
 #ggsave(paste0("./IW_",IW,".png"),p)
 print(p)
 }
 }
 ```
 
-```{r}
-df_to_plot = test_outcome1$Outcomes_Long_Format
-for(IW in unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth)){
-p = ggplot()
-colors = c("red","blue","green","yellow","black")
-for(simu_nb in seq(1,5)){
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(as.numeric(Profit))
-p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(Profit),x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
-}
-#ggsave(paste0("./IW_",IW,".png"),p)
-print(p)
-}
 
-
-```
 
 ```{r}
 #Start Graphics
 plot_insurance_distributions(scenario_3_results_ils_RP100)
+#Opposed to the Insurance Function, the Reinsurance Plot Funtion does not #subset after simulationsnumbers, as these are basically fixed to single
+#insurance outcomes, which have a different arrangement 
 plot_reinsurance_distributions(scenario_3_results_ils_RP100)
 plot_insurance_summary_statistics(scenario_3_results_ils_RP100)
 
@@ -877,68 +863,6 @@ df_to_plot = df_to_plot
 df_to_plot
 ```
 
-
-```{r}
-df_to_plot = test_outcome1$Outcomes_Long_Format
-df_melted = melt(df_to_plot,id=c("Profit"))
-df_melted
-```
-
-
-```{r}
-ggplot(df_melted) + geom_line(aes(y=value,x=seq(1,32000),color = Initial_Wealth))
-```
-
-
-
-```{r}
-df_to_plot = test_outcome1$Outcomes_Long_Format
-IWs = (unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth))
-p = ggplot()
-colors = c("red","blue","green","orange","brown")
-for(IW in IWs[order(IWs)]){
-  df_to_plot_IW = df_to_plot[df_to_plot$Initial_Wealth == IW,]
-  max_profit = max(df_to_plot_IW$Profit)
-  nb_simu = df_to_plot_IW[df_to_plot_IW$Profit == max_profit,]$Simulation_Number
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>%     arrange(Profit)
-p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),colour = IW)+ggtitle(paste0("Profits by simulations for multiple initial wealths")) + labs(x = " ", y = "Profit", 
-       colour = "Initial wealth")
-}
-
-print(p)
-```
-
-
-
-
-
-
-```{r}
-df_to_plot = test_outcome2$`Reinsurance Outcomes`[[2]]
-```
-
-
-
-
-
-```{r}
-read.csv("C:/Users/yousra.cherkaoui/OneDrive - Milliman/Documents/cyber/Code/cologne_modelthon/Cologne-Cyber-Insurance-Modelthon/data/71-buckets.RData", header=TRUE, sep= " ")
-```
-
-
-
-```{r}
-df_to_plot = test_outcome2$`Reinsurance Outcomes`[[2]]
-p = ggplot()
-colors = c("red","blue","green","yellow","black")
-for(simu_nb in seq(1,5)){
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% arrange(Profit)
-p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations "))+ xlab(" ") 
-}
-#ggsave(paste0("./IW_",IW,".png"),p)
-print(p)
-
-```
 
 
 
@@ -961,8 +885,6 @@ calculate_reinsurance_outcomes_with_bonds_and_backstop <- function(insurance_out
   
   
 
-
-feasibility_analayis_insurance_reinsurance
 
 
 #' Plot Outcomes
