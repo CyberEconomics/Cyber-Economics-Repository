@@ -730,6 +730,93 @@ return(final_output)
 
 
 
+```{r}
+#Graphic Functions
+plot_insurance_distributions <- function(insurance_object){
+df_to_plot = insurance_object[[1]][[2]]
+for(IW in unique(df_to_plot$Initial_Wealth)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+for(simu_nb in seq(1,5)){
+  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(Profit)
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
+}
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
+}
+```
+
+```{r}
+#Plot Graph for Summary Statistics
+plot_insurance_summary_statistics <- function(insurance_object){
+#Transpose and Shape the Summary Statistics to plot
+df_to_plot = as.data.frame(t(insurance_object[[1]][[1]]))
+#Transform VaR to Positive
+df_to_plot[, "Avg. VaR 99.5% (RP200)"] = df_to_plot[, "Avg. VaR 99.5% (RP200)"] * -1
+values = cbind(df_to_plot,1:nrow(df_to_plot))  
+colnames(values)[ncol(values)] <- "Number_RC"
+values = pivot_longer(values, cols = c("Initial Wealth (IW)","Avg. VaR 99.5% (RP200)","Model Premium", "Avg. Profit", "Premium with Expense Ratio"))
+
+colors = c("red","blue","green","yellow","black")
+#Meltdown the to the long format. Add a dummy variable "type" to map the different outputs of the transformation to the to be graphed data.
+#First mutate call is from the ForCats package to give custom order for the graph
+p = values %>% ggplot( aes(fill=name, y=value, x=1)) + 
+    geom_bar(position="dodge", stat="identity") + xlab("")+ facet_grid(. ~Number_RC) 
+#ggsave(paste0("./IW_",IW,".png"),p)
+#Rearrange Function: 
+#mutate(name = fct_relevel( 
+#            "Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)","Premium with #Expense Ratio", "Model Premium", "Avg. Profit" ))
+print(p)
+
+}
+```
+
+```{r}
+#Graphic Functions
+plot_reinsurance_distributions <- function(insurance_object){
+df_to_plot = insurance_object[[2]][[2]]
+for(num_RC in unique(df_to_plot$Number_RC)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+
+  df_to_plot_simu_1= df_to_plot %>% filter(Number_RC == num_RC) %>% arrange(as.numeric(Profit))
+
+
+  
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(Profit),x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for RC ",num_RC))+ xlab(" ") 
+
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
+}
+```
+
+```{r}
+#Graphic Functions
+plot_ils_distributions <- function(insurance_object){
+df_to_plot = insurance_object[[3]][[2]]
+for(num_RC in unique(df_to_plot$Number_RC)){
+p = ggplot()
+colors = c("red","blue","green","yellow","black")
+
+
+#Get copupon payment
+coupon_payment = insurance_object[[3]][[1]][num_RC,6][[1]]
+print(coupon_payment)
+  df_to_plot_simu_1= df_to_plot %>% filter(Number_RC == num_RC) %>% arrange(as.numeric(bond_loss)) %>% mutate(outcome_ILS = coupon_payment - as.numeric(bond_loss))
+  
+
+
+
+  
+p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(outcome_ILS),x=seq(1,length(outcome_ILS))))+ggtitle(paste0("Outcome for ILS Investor ", num_RC))+ xlab(" ") 
+
+#ggsave(paste0("./IW_",IW,".png"),p)
+print(p)
+}
+}
+```
 
 
 ```{r}
@@ -782,66 +869,6 @@ scenario_3_results_ils_RP100 = calculate_reinsurance_ils_hypothetical_bond_outco
 ```
 
 
-```{r}
-#Graphic Functions
-plot_insurance_distributions <- function(insurance_object){
-df_to_plot = insurance_object[[1]][[2]]
-for(IW in unique(df_to_plot$Initial_Wealth)){
-p = ggplot()
-colors = c("red","blue","green","yellow","black")
-for(simu_nb in seq(1,5)){
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(Profit)
-p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
-}
-#ggsave(paste0("./IW_",IW,".png"),p)
-print(p)
-}
-}
-
-#Plot Graph for Summary Statistics
-plot_insurance_summary_statistics <- function(insurance_object){
-#Transpose and Shape the Summary Statistics to plot
-df_to_plot = as.data.frame(t(insurance_object[[1]][[1]]))
-#Transform VaR to Positive
-df_to_plot[, "Avg. VaR 99.5% (RP200)"] = df_to_plot[, "Avg. VaR 99.5% (RP200)"] * -1
-values = cbind(df_to_plot,1:nrow(df_to_plot))  
-colnames(values)[ncol(values)] <- "Number_RC"
-values = pivot_longer(values, cols = c("Initial Wealth (IW)","Avg. VaR 99.5% (RP200)","Model Premium", "Avg. Profit", "Premium with Expense Ratio"))
-
-colors = c("red","blue","green","yellow","black")
-#Meltdown the to the long format. Add a dummy variable "type" to map the different outputs of the transformation to the to be graphed data.
-#First mutate call is from the ForCats package to give custom order for the graph
-p = values %>% ggplot( aes(fill=name, y=value, x=1)) + 
-    geom_bar(position="dodge", stat="identity") + xlab("")+ facet_grid(. ~Number_RC) 
-#ggsave(paste0("./IW_",IW,".png"),p)
-#Rearrange Function: 
-#mutate(name = fct_relevel( 
-#            "Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)","Premium with #Expense Ratio", "Model Premium", "Avg. Profit" ))
-print(p)
-
-}
-```
-
-```{r}
-#Graphic Functions
-plot_reinsurance_distributions <- function(insurance_object){
-df_to_plot = insurance_object[[2]][[2]]
-for(num_RC in unique(df_to_plot$Number_RC)){
-p = ggplot()
-colors = c("red","blue","green","yellow","black")
-
-  df_to_plot_simu_1= df_to_plot %>% filter(Number_RC == num_RC) %>% arrange(as.numeric(Profit))
-
-
-  
-p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(Profit),x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for given RC"))+ xlab(" ") 
-
-#ggsave(paste0("./IW_",IW,".png"),p)
-print(p)
-}
-}
-```
-
 
 
 ```{r}
@@ -851,66 +878,13 @@ plot_insurance_distributions(scenario_3_results_ils_RP100)
 #insurance outcomes, which have a different arrangement 
 plot_reinsurance_distributions(scenario_3_results_ils_RP100)
 plot_insurance_summary_statistics(scenario_3_results_ils_RP100)
-
+plot_ils_distributions(scenario_3_results_ils_RP100)
 
 
 ```
 
-```{r}
-library(reshape)
-df_to_plot = test_outcome1$Outcomes_Long_Format
-df_to_plot = df_to_plot
-df_to_plot
-```
 
 
-
-
-
-
-```{r}
-#New Functions
-
-
-
-calculate_reinsurance_outcomes_with_bonds <- function(insurance_outcomes, reinsurance_matrix){ 
-  
-  }
-  
-
-
-calculate_reinsurance_outcomes_with_bonds_and_backstop <- function(insurance_outcomes, reinsurance_matrix){ 
-  
-  }
-  
-  
-
-
-
-#' Plot Outcomes
-#'
-#' @author Daniel Kasper <daniel.kasper@@cyber-economics.com>
-#'
-#' @param total_outcomes Plots the outcome function, can be mu
-#' @param verification_Set Verification set with "fresh" data to verifiy to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
-#' 
-#'
-```
-
-
-```{r}
-df_to_plot = test_outcome1$Outcomes_Long_Format
-for(IW in unique(test_outcome1$Outcomes_Long_Format$Initial_Wealth)){
-p = ggplot()
-colors = c("red","blue","green","yellow","black")
-for(simu_nb in seq(1,5)){
-  df_to_plot_simu_1= df_to_plot[df_to_plot$Simulation_Number== simu_nb,]%>% filter(Initial_Wealth == IW) %>% arrange(Profit)
-p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=Profit,x=seq(1,length(Profit))),color = colors[simu_nb], label = paste0("simulation_nb",str(simu_nb)))+ggtitle(paste0("Profits by simulations for initial wealth = ",IW))+ xlab(" ") 
-}
-#ggsave(paste0("./IW_",IW,".png"),p)
-print(p)
-}
-```
 
 
 
