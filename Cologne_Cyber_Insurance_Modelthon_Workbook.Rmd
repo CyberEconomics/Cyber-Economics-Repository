@@ -242,7 +242,7 @@ num_rc = nrow(reinsurance_matrix)
 for (i in 1:num_rc){
 
 #Get Correct reinsurance weight for each company.
-reinsurance_weights = cbind(c(1:num_IC),reinsurance_matrix[i])
+reinsurance_weights = cbind(c(1:num_IC),reinsurance_matrix[i,])
 colnames(reinsurance_weights) = c("Number_IC", "Quota_Share")
 
 #Get the Reinsurance Losses by looking up the Quota_Shares from the reinsurer
@@ -398,7 +398,7 @@ num_rc = nrow(reinsurance_matrix)
 for (i in 1:num_rc){
 
 #Get Correct reinsurance weight for each company.
-reinsurance_weights = cbind(c(1:num_IC),reinsurance_matrix[i])
+reinsurance_weights = cbind(c(1:num_IC),reinsurance_matrix[i,])
 colnames(reinsurance_weights) = c("Number_IC", "Quota_Share")
 
 #Get the Reinsurance Losses by looking up the Quota_Shares from the reinsurer
@@ -608,7 +608,7 @@ num_rc = nrow(reinsurance_matrix)
 for (i in 1:num_rc){
 
 #Get Correct reinsurance weight for each company.
-reinsurance_weights = cbind(c(1:num_IC),reinsurance_matrix[i])
+reinsurance_weights = cbind(c(1:num_IC),reinsurance_matrix[i,])
 colnames(reinsurance_weights) = c("Number_IC", "Quota_Share")
 
 #Get the Reinsurance Losses by looking up the Quota_Shares from the reinsurer
@@ -869,7 +869,7 @@ scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimiza
 
 #ILS Outcomes with Reinsurance Outcomes
 
-scenario_3_results_ils_RP100 = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_optimization_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,1, 0.02,.99)
+scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_optimization_results[1,,,], verification_set, scenario_4_IW, reinsurance_matrix_1,bond_value_array,1, 0.02,.99)
 
 
 ```
@@ -877,19 +877,23 @@ scenario_3_results_ils_RP100 = calculate_reinsurance_ils_hypothetical_bond_outco
 ```{r}
 # ILS Scenario Big Primary Insurer. Set reinsurance matrix equal to 1 to pass through bond.
 
-#Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value. However, for the ils array, we need to do this twice. 
+#Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped.  
 
 
-ils_pseudo_array = array(dim = c(2,dim(ils_bond_scenario_1)[[2]],dim(ils_bond_scenario_1)[[3]],2))
-ils_pseudo_array[1,,,1] = ils_bond_scenario_1[1,,,1]
-ils_pseudo_array[1,,,2] = ils_bond_scenario_1[1,,,1]
-ils_pseudo_array[2,,,1] = ils_bond_scenario_1[1,,,1]
-ils_pseudo_array[2,,,2] = ils_bond_scenario_1[1,,,1]
+ils_pseudo_array = array(dim = c(dim(ils_bond_scenario_1)[[2]],dim(ils_bond_scenario_1)[[3]],2))
+ils_pseudo_array[,,1] = ils_bond_scenario_1[,,,1]
+ils_pseudo_array[,,2] = ils_bond_scenario_1[,,,1]
 
-#Bond Value 
 
-ils_reinsurance_matrix = matrix(c(0.135e4), nrow = 1, ncol = 1)
-ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array[1,,,], verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_array,1, 0.02,.99)
+#Bond Value, double matrix for input
+
+ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
+bond_value = c(0.135e4)
+ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
+
+#Capital Curve
+
+profit_insurer_no_bond = ils_bond_results_1[[1]][[1]][4,1]
 
 ```
 
