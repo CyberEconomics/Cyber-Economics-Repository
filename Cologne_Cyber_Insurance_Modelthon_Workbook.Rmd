@@ -39,16 +39,21 @@ load(paste0(wd,"/data/71-buckets.RData"))
 #Load Data constrained Optimization
 load(paste0(wd,"/data/constrained.RData"))
 
+#load ILS Scenario Data
+load(paste0(wd,"/data/ils_scenario_data.RData"))
+
 
 #Hardcoded IW-Arrays
 scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_2_IW = c(6:15*1e3)
 scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
+scenario_4_IW = c(3.6e4)
 
 #More Information:
 #Scenario 1: Standard Optimization, No Constraints
 #Scenario 2: One Insurer per 
 #Scenario 3: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med
+#Scenario 4: Cyber ILS Bond of big Primary Insurer with ~1.2B GWP
 ```
 
 
@@ -230,7 +235,7 @@ num_rc = nrow(reinsurance_matrix)
 
 #Declare Reinsurance Matrix Summary 
 
-  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = 5))
+  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = num_sim_runs))
   #Write Initial Capital 
   rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP200)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
 
@@ -255,10 +260,10 @@ reinsurance_return_vector = sort(reinsurance_outcomes[[k]][["reinsurance_epoch_l
 #Write Reinsurance Outcomes to Data, fit to reinsurance
 
         if(i*k == 1){ 
-       statistical_distributions_reinsurance =    as.data.frame(cbind(returnvector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+       statistical_distributions_reinsurance =    as.data.frame(cbind(returnvector, rep(paste0((reinsurance_matrix[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(statistical_distributions_reinsurance) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC")   
     } else {
-      new_rows = as.data.frame(cbind(returnvector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+      new_rows = as.data.frame(cbind(returnvector, rep(paste0((reinsurance_matrix[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(new_rows) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC") 
       statistical_distributions_reinsurance = rbind(statistical_distributions_reinsurance, new_rows)
       
@@ -386,7 +391,7 @@ num_rc = nrow(reinsurance_matrix)
 
 #Declare Reinsurance Matrix Summary 
 
-  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = 5))
+  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = num_sim_runs))
   #Write Initial Capital 
   rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP200)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
 
@@ -411,10 +416,10 @@ reinsurance_return_vector = sort(reinsurance_outcomes[[k]][["reinsurance_epoch_l
 #Write Reinsurance Outcomes to Data, fit to reinsurance
 
         if(i*k == 1){ 
-       statistical_distributions_reinsurance =    as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+       statistical_distributions_reinsurance =    as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(statistical_distributions_reinsurance) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC")   
     } else {
-      new_rows = as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+      new_rows = as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(new_rows) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC") 
       statistical_distributions_reinsurance = rbind(statistical_distributions_reinsurance, new_rows)
       
@@ -596,7 +601,7 @@ num_rc = nrow(reinsurance_matrix)
 
 #Declare Reinsurance Matrix Summary 
 
-  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = 5))
+  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = num_sim_runs))
   #Write Initial Capital 
   rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP200)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
 
@@ -621,10 +626,10 @@ reinsurance_return_vector = sort(reinsurance_outcomes[[k]][["reinsurance_epoch_l
 #Write Reinsurance Outcomes to Data, fit to reinsurance
 
         if(i*k == 1){ 
-       statistical_distributions_reinsurance =    as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+       statistical_distributions_reinsurance =    as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(statistical_distributions_reinsurance) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC")   
     } else {
-      new_rows = as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix_1[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+      new_rows = as.data.frame(cbind(reinsurance_return_vector, rep(paste0((reinsurance_matrix[i,])), n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
          colnames(new_rows) <- c("Profit", "List_of_Weights", "Simulation_Number", "Damage_Year/Epoch", "Number_RC") 
       statistical_distributions_reinsurance = rbind(statistical_distributions_reinsurance, new_rows)
       
@@ -866,7 +871,29 @@ scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimiza
 
 scenario_3_results_ils_RP100 = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_optimization_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,1, 0.02,.99)
 
+
 ```
+
+```{r}
+# ILS Scenario Big Primary Insurer. Set reinsurance matrix equal to 1 to pass through bond.
+
+#Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value. However, for the ils array, we need to do this twice. 
+
+
+ils_pseudo_array = array(dim = c(2,dim(ils_bond_scenario_1)[[2]],dim(ils_bond_scenario_1)[[3]],2))
+ils_pseudo_array[1,,,1] = ils_bond_scenario_1[1,,,1]
+ils_pseudo_array[1,,,2] = ils_bond_scenario_1[1,,,1]
+ils_pseudo_array[2,,,1] = ils_bond_scenario_1[1,,,1]
+ils_pseudo_array[2,,,2] = ils_bond_scenario_1[1,,,1]
+
+#Bond Value 
+
+ils_reinsurance_matrix = matrix(c(0.135e4), nrow = 1, ncol = 1)
+ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array[1,,,], verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_array,1, 0.02,.99)
+
+```
+
+
 
 
 
