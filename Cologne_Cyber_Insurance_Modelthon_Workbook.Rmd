@@ -58,7 +58,7 @@ scenario_4_CC_IW = c(3.6e4 + 0.135e4,3.6e4 + 0.135e4*2,3.6e4 + 0.135e4*3,3.6e4 +
 ```
 
 ```{r}
-#Function to query coalition data from Google Drive
+#Function to query coalition data 
 load_coalition_data <- function() {
   library(googlesheets4)
   data <- read_sheet("https://docs.google.com/spreadsheets/d/18XwUZXET9ZsEyYHevRwxreuFejoAlFxBSEf9r3mkwR8/edit?usp=drive_web&ouid=113610088129293170193")
@@ -242,7 +242,7 @@ num_rc = nrow(reinsurance_matrix)
 
 #Declare Reinsurance Matrix Summary 
 
-  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = num_sim_runs))
+  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = 5))
   #Write Initial Capital 
   rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP200)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
 
@@ -398,7 +398,7 @@ num_rc = nrow(reinsurance_matrix)
 
 #Declare Reinsurance Matrix Summary 
 
-  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = num_sim_runs))
+  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = 5))
   #Write Initial Capital 
   rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP200)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
 
@@ -537,6 +537,7 @@ calculate_reinsurance_ils_hypothetical_bond_outcome <- function(weights, verific
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
   rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
+  print(1)
   n_runs =  ncol(verification_set)
   for (i in 1:num_IC){
     
@@ -608,9 +609,11 @@ num_rc = nrow(reinsurance_matrix)
 
 #Declare Reinsurance Matrix Summary 
 
-  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = num_sim_runs))
+  reinsurance_result_matrix <- data.frame(matrix(ncol = num_rc, nrow = 5))
   #Write Initial Capital 
+  browser()
   rownames(reinsurance_result_matrix) <- c("Avg. VaR 99.5% (RP200)","Avg. Profit", "Primary Model Premium Share", "Premium with Expense Ratio", "Avg. Probability of Loss" )
+ 
 
 for (i in 1:num_rc){
 
@@ -703,7 +706,7 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
  
 adjusted_Var_name = paste0("VAR",VaR_Position_ILS*100)
 names(bond_outcomes)[names(bond_outcomes) == 'VAR99.5'] <- "adjusted_Var_name" 
- 
+
 #Calculate Bond Expected Losses. To get the EVs, group by the respectice Reinsurer (1 bond for 1 #reinsurer) and divide the sum of bond_losses by the number of simulation runs times the sample size
 # of the verification set (32k).
 
@@ -885,9 +888,15 @@ scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outco
 #Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped.  
 
 
-ils_pseudo_array = array(dim = c(dim(ils_bond_scenario_1)[[2]],dim(ils_bond_scenario_1)[[3]],2))
-ils_pseudo_array[,,1] = ils_bond_scenario_1[,,,1]
-ils_pseudo_array[,,2] = ils_bond_scenario_1[,,,1]
+#ils_pseudo_array = array(dim = 
+#c(dim(ils_bond_scenario_1)[[2]],dim(ils_bond_scenario_1)[[3]],2))
+
+ils_pseudo_array = array(dim = c(dim(SimulationresultArray)[[2]],dim(SimulationresultArray)[[3]],2))
+
+
+#Get the results of the main optimization
+ils_pseudo_array[,,1] = SimulationresultArray[1,,,1]
+ils_pseudo_array[,,2] = SimulationresultArray[1,,,1]
 
 
 #Bond Value, double matrix for input
@@ -901,7 +910,7 @@ ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pse
 dim_cc = dim(ils_bond_scenario_2)[[1]]
 capital_curve_ils_pseudo_array = array(dim = c(dim(ils_bond_scenario_2)[[2]],dim(ils_bond_scenario_2)[[3]],2)) 
 
-capital_curve_overview = matrix(nrow = 7, ncol = dim_cc)
+current_values_cc = matrix(nrow = 7, ncol = dim_cc)
 
 for (i in 1:dim_cc){
   #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
