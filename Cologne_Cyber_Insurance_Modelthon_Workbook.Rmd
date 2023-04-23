@@ -48,6 +48,7 @@ scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3)
 scenario_2_IW = c(6:15*1e3)
 scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_4_IW = c(3.6e4)
+scenario_4_CC_IW = c(3.6e4 + 0.135e4,3.6e4 + 0.135e4*2,3.6e4 + 0.135e4*3,3.6e4 + 0.135e4*4 )
 
 #More Information:
 #Scenario 1: Standard Optimization, No Constraints
@@ -56,6 +57,14 @@ scenario_4_IW = c(3.6e4)
 #Scenario 4: Cyber ILS Bond of big Primary Insurer with ~1.2B GWP
 ```
 
+```{r}
+#Function to query coalition data from Google Drive
+load_coalition_data <- function() {
+  library(googlesheets4)
+  data <- read_sheet("https://docs.google.com/spreadsheets/d/18XwUZXET9ZsEyYHevRwxreuFejoAlFxBSEf9r3mkwR8/edit?usp=drive_web&ouid=113610088129293170193")
+  return(data)
+}
+```
 
 
 
@@ -116,6 +125,7 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
   realized_result <- mean(returnvector)
   #Premiums need to be scaled down by 1000. The model premium is calculated by 
   model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
+ 
   #With the expenseratio added
   implied_premiums_with_expense_ratio = (colSums(active_weight %*% (premium_array))) /0.7 + implied_premiums_with_expense_ratio
 probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probability_of_loss
@@ -142,9 +152,6 @@ names(output) = c("Summary_Statistics", "Outcomes_Long_Format")
   return(output)
 }
 ```
-
-
-
 
 ```{r}
 #' Calculate the outcomes from the best weights of the optimization and the respective weights of insurance companies 
@@ -488,9 +495,9 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
  bond_statistics = bond_outcomes %>% group_by(Number_RC) %>% summarize(
  absolute_expected_loss_bonds = sum(bond_loss)/(num_sim_runs*n_runs),
  relative_expected_loss = absolute_expected_loss_bonds/mean(Cyber_Bond_Value),
- variance_loss_bonds = var(bond_loss),
+ sd_loss_bonds = sd(bond_loss),
  #Target Sharpe Ratio solved for coupon payments = TRSR * VAR + EV(Return) + Risk Free Rate
- coupon_payment = target_sharpe_ratio * variance_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
+ coupon_payment = target_sharpe_ratio * sd_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
  Return_On_Equity_Investors = coupon_payment/mean(Cyber_Bond_Value),
  sum_uninsured_losses =  sum(excess_uninsured_loss)/(num_sim_runs*n_runs),
  Probability_of_bond_payout = ifelse(bond_loss > 0,1,0)/(num_sim_runs*n_runs),
@@ -705,9 +712,9 @@ names(bond_outcomes)[names(bond_outcomes) == 'VAR99.5'] <- "adjusted_Var_name"
    Cyber_Bond_Value = mean(Cyber_Bond_Value),
  absolute_expected_loss_bonds = mean(bond_loss),
  relative_expected_loss = mean(absolute_expected_loss_bonds/Cyber_Bond_Value),
- variance_loss_bonds = var(bond_loss),
+ sd_loss_bonds = sd(bond_loss),
  #Target Sharpe Ratio solved for coupon payments = TRSR * VAR + EV(Return) + Risk Free Rate
-coupon_payment = target_sharpe_ratio * variance_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
+coupon_payment = target_sharpe_ratio * sd_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
 Return_On_Equity_Investors = coupon_payment/Cyber_Bond_Value,
 sum_uninsured_losses =  mean(excess_uninsured_loss),
 Attatchment_Probability_Bond = mean(ifelse(bond_loss > 0,1,0)),
@@ -732,8 +739,6 @@ ILS_output = list(bond_statistics,bond_outcomes)
 return(final_output)
 }
 ```
-
-
 
 ```{r}
 #Graphic Functions
@@ -891,12 +896,65 @@ ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
 bond_value = c(0.135e4)
 ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
 
+#Capital Curve ILS
+
+dim_cc = dim(ils_bond_scenario_2)[[1]]
+capital_curve_ils_pseudo_array = array(dim = c(dim(ils_bond_scenario_2)[[2]],dim(ils_bond_scenario_2)[[3]],2)) 
+
+capital_curve_overview = matrix(nrow = 7, ncol = dim_cc)
+
+for (i in 1:dim_cc){
+  #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
+  capital_curve_ils_pseudo_array[,,1] = ils_bond_scenario_2[i,,,]
+  capital_curve_ils_pseudo_array[,,2] = ils_bond_scenario_2[i,,,]
+  current_values_cc = calculate_insurance_outcomes(capital_curve_ils_pseudo_array, verification_set, scenario_4_CC_IW[i])
+capital_curve_ils_pseudo_array[,,i] = current_values_cc[[1]][4,1]
+  
+}
+print(ils_capital_curve_overview)
+
 #Capital Curve
 
 profit_insurer_no_bond = ils_bond_results_1[[1]][[1]][4,1]
 
+
+#
+
 ```
 
+```{r}
+ils_pseudo_array = array(dim = c(dim(ils_bond_scenario_1)[[2]],dim(ils_bond_scenario_1)[[3]],2))
+ils_pseudo_array[,,1] = ils_bond_scenario_1[,,,1]
+ils_pseudo_array[,,2] = ils_bond_scenario_1[,,,1]
+
+
+#Bond Value, double matrix for input
+
+ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
+bond_value = c(0.135e4)
+ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.99)
+
+#Capital Curve ILS
+
+dim_cc = dim(SimulationresultArray)[[1]]
+capital_curve_ils_pseudo_array = array(dim = c(dim(SimulationresultArray)[[2]],dim(SimulationresultArray)[[3]],2)) 
+
+capital_curve_overview = matrix(nrow = 7, ncol = 1)
+
+for (i in 1:dim_cc){
+  #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
+  capital_curve_ils_pseudo_array[,,1] = ils_bond_scenario_2[i,,,]
+  capital_curve_ils_pseudo_array[,,2] = ils_bond_scenario_2[i,,,]
+  current_values_cc = calculate_insurance_outcomes(capital_curve_ils_pseudo_array, verification_set, scenario_4_CC_IW[i])
+capital_curve_overview[i,1] = current_values_cc[[1]][4,1]
+  
+}
+print(capital_curve_overview)
+
+#Capital Curve
+
+profit_insurer_no_bond = ils_bond_results_1[[1]][[1]][4,1]
+```
 
 
 
