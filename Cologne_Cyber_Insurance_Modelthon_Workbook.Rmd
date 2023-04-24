@@ -42,13 +42,16 @@ load(paste0(wd,"/data/constrained.RData"))
 #load ILS Scenario Data
 load(paste0(wd,"/data/ils_scenario_data.RData"))
 
+#load ILS Scenario Primary Insurer "Beazley"
+load(paste0(wd,"/data/ils_scenario_beazley.RData"))
+
 
 #Hardcoded IW-Arrays
 scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_2_IW = c(6:15*1e3)
 scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_4_IW = c(3e4)
-scenario_4_CC_IW = c(3,3.5e4,4e4,4.5e4,5e4 )
+scenario_4_CC_IW = c(3e4,3.5e4,4e4,4.5e4,5e4 )
 
 #More Information:
 #Scenario 1: Standard Optimization, No Constraints
@@ -61,6 +64,7 @@ scenario_4_CC_IW = c(3,3.5e4,4e4,4.5e4,5e4 )
 #Function to query coalition data 
 load_coalition_data <- function() {
   library(googlesheets4)
+  gs4_deauth()
   data <- read_sheet("https://docs.google.com/spreadsheets/d/18XwUZXET9ZsEyYHevRwxreuFejoAlFxBSEf9r3mkwR8/edit?usp=drive_web&ouid=113610088129293170193")
   return(data)
 }
@@ -882,37 +886,35 @@ scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outco
 ```{r}
 # ILS Scenario Big Primary Insurer. Set reinsurance matrix equal to 1 to pass through bond.
 
-#Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped.  
+#Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. Fixing this is a to-do of a later version
 
+# IMPORTANT: Because we pass 100% through the reinsurance sector, there seems to be a bug that counts the profit and outcomes double. Will be fixed in the next version
 
-#ils_pseudo_array = array(dim = 
-#c(dim(ils_bond_scenario_1)[[2]],dim(ils_bond_scenario_1)[[3]],2))
-
-ils_pseudo_array = array(dim = c(dim(SimulationresultArray)[[2]],dim(SimulationresultArray)[[3]],2))
+ils_pseudo_array = array(dim = c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2))
 
 
 #Get the results of the main optimization [first simulation result]
-ils_pseudo_array[,,1] = SimulationresultArray[1,,,1]
-ils_pseudo_array[,,2] = SimulationresultArray[1,,,1]
+ils_pseudo_array[,,1] = ils_beazley_case[1,,,1]
+ils_pseudo_array[,,2] = ils_beazley_case[1,,,1]
 
 
 #Bond Value, double matrix for input
 
 ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
-bond_value = c(5e4)
+bond_value = c(5e3)
 ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
 
 #Capital Curve ILS
 
-dim_cc = dim(SimulationresultArray)[[1]]
-capital_curve_ils_pseudo_array = array(dim = c(dim(SimulationresultArray)[[2]],dim(SimulationresultArray)[[3]],2)) 
+dim_cc = dim(ils_beazley_case)[[1]]
+capital_curve_ils_pseudo_array = array(dim = c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2)) 
 
 capital_curve_overview = matrix(nrow = dim_cc, ncol = 1)
 
-for (i in 1:dim_cc){
+for (i in 1:1){
   #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
-  capital_curve_ils_pseudo_array[,,1] = SimulationresultArray[i,,,]
-  capital_curve_ils_pseudo_array[,,2] = SimulationresultArray[i,,,]
+  capital_curve_ils_pseudo_array[,,1] = ils_beazley_case[i,,,]
+  capital_curve_ils_pseudo_array[,,2] = ils_beazley_case[i,,,]
   current_values_cc = calculate_insurance_outcomes(capital_curve_ils_pseudo_array, verification_set, scenario_4_CC_IW[i])
   print(i)
 capital_curve_overview[i,1] = current_values_cc[[1]][4,1]
@@ -920,12 +922,10 @@ capital_curve_overview[i,1] = current_values_cc[[1]][4,1]
 }
 print(capital_curve_overview)
 
-#Capital Curve
+#Profit Insurer with $35M,currently hard coded.
 
-profit_insurer_no_bond = ils_bond_results_1[[1]][[1]][4,1]
-
-
-#
+scenario_35M_noILS = 1776
+print(ils_bond_results_1)
 
 ```
 
@@ -978,12 +978,8 @@ print(different_bond_values)
 
 ```{r}
 #Start Graphics
-plot_insurance_distributions(scenario_3_results_ils_RP100)
-#Opposed to the Insurance Function, the Reinsurance Plot Funtion does not #subset after simulationsnumbers, as these are basically fixed to single
-#insurance outcomes, which have a different arrangement 
-plot_reinsurance_distributions(scenario_3_results_ils_RP100)
-plot_insurance_summary_statistics(scenario_3_results_ils_RP100)
-plot_ils_distributions(scenario_3_results_ils_RP100)
+plot_insurance_distributions(ils_different_bond_value1)
+
 
 
 ```
