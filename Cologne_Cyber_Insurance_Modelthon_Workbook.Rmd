@@ -62,8 +62,9 @@ scenario_4_CC_IW = c(3e4,3.5e4,4e4,4.5e4,5e4 )
 
 ```{r}
 #Function to query coalition data 
+library(googlesheets4)
 load_coalition_data <- function() {
-  library(googlesheets4)
+  
   gs4_deauth()
   data <- read_sheet("https://docs.google.com/spreadsheets/d/18XwUZXET9ZsEyYHevRwxreuFejoAlFxBSEf9r3mkwR8/edit?usp=drive_web&ouid=113610088129293170193")
   return(data)
@@ -943,7 +944,7 @@ ils_attatchment3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseud
 different_attatchment_points = rbind(ils_attatchment1[[3]][[1]],ils_attatchment2[[3]][[1]],ils_attatchment3[[3]][[1]])
 
 print(different_attatchment_points)
-
+print(ils_attatchment1)
 ```
 
 
