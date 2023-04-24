@@ -47,8 +47,8 @@ load(paste0(wd,"/data/ils_scenario_data.RData"))
 scenario_1_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_2_IW = c(6:15*1e3)
 scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
-scenario_4_IW = c(3.6e4)
-scenario_4_CC_IW = c(3.6e4,3.6e4 + 0.135e4,3.6e4 + 0.135e4*2,3.6e4 + 0.135e4*3,3.6e4 + 0.135e4*4 )
+scenario_4_IW = c(3e4)
+scenario_4_CC_IW = c(3,3.5e4,4e4,4.5e4,5e4 )
 
 #More Information:
 #Scenario 1: Standard Optimization, No Constraints
@@ -65,8 +65,6 @@ load_coalition_data <- function() {
   return(data)
 }
 ```
-
-
 
 ```{r}
 #' Calculate the outcomes from the best weights of the optimization and the respective weights of insurance companies 
@@ -831,7 +829,6 @@ print(p)
 }
 ```
 
-
 ```{r}
 #Start Analysis
 
@@ -902,7 +899,7 @@ ils_pseudo_array[,,2] = SimulationresultArray[1,,,1]
 #Bond Value, double matrix for input
 
 ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
-bond_value = c(0.135e4)
+bond_value = c(5e4)
 ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
 
 #Capital Curve ILS
@@ -943,11 +940,15 @@ ils_attatchment2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseud
 
 ils_attatchment3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.98)
 
-different_attatchment_points = rbind(ils_attatchment1,ils_attatchment2,ils_attatchment3)
+different_attatchment_points = rbind(ils_attatchment1[[3]][[1]],ils_attatchment2[[3]][[1]],ils_attatchment3[[3]][[1]])
 
 print(different_attatchment_points)
 
 ```
+
+
+
+
 ```{r}
 
 #Different Bond Values
@@ -965,7 +966,7 @@ ils_different_bond_value5 = calculate_reinsurance_ils_hypothetical_bond_outcome(
 
 ils_different_bond_value6 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[6],1, 0.02,.995)
 
-different_bond_values = rbind(ils_different_bond_value1,ils_different_bond_value2,ils_different_bond_value3,ils_different_bond_value4,ils_different_bond_value5,ils_different_bond_value6)
+different_bond_values = rbind(ils_different_bond_value1[[3]][[1]],ils_different_bond_value2[[3]][[1]],ils_different_bond_value3[[3]][[1]],ils_different_bond_value4[[3]][[1]],ils_different_bond_value5[[3]][[1]],ils_different_bond_value6[[3]][[1]])
 
 print(different_bond_values)
 ```
