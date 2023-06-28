@@ -43,7 +43,6 @@ load(paste0(wd,"/data/constrained.RData"))
 load(paste0(wd,"/data/ils_scenario_data.RData"))
 
 #load ILS Scenario Primary Insurer "Beazley"
-load(paste0(wd,"/data/ils_scenario_beazley.RData"))
 
 
 #Hardcoded IW-Arrays
@@ -79,9 +78,9 @@ load_coalition_data <- function() {
 #' @param weights 2-Dimensional Array with the outcomes of main simulation or manually set weights. Needs to be fed all Insurance Companies for a given model.
 #' @param verification_Set Verification set with "fresh" data to verifiy to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
 #' @output Returns a list with the VaR, average return, many more summary statistics and a data.frame with the outcomes in the long (=dplyr & ggplot2 friendly) format.
-#'
+#' @param mode Integer where 1 returns additional values used by higher order functions and 0 returns just the result
 
-calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth_array){
+calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth_array, mode){
   #Get Result Dimensions from the dimension of the weight
   num_IC =  dim(weights)[3]
   num_sim_runs =  dim(weights)[1]
@@ -149,9 +148,14 @@ probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probab
      
     
   }
-  
-output = list(result_matrix,statistical_distributions)
-names(output) = c("Summary_Statistics", "Outcomes_Long_Format")
+  if (mode == 0) { 
+    output = list(result_matrix,statistical_distributions)
+    names(output) = c("Summary_Statistics", "Outcomes_Long_Format")
+    }
+  else{
+    output = list(result_matrix,statistical_distributions, returnvector)
+    names(output) = c("Summary_Statistics", "Outcomes_Long_Format", "Return Vector")
+  }
   return(output)
 }
 ```
@@ -166,78 +170,85 @@ names(output) = c("Summary_Statistics", "Outcomes_Long_Format")
 #' @param reinsurance_matrix A Reinsurance matrix with number of insurance companies equal to the columns 
 #' @output Returns a list with tons of good stuff!
 #'
-calculate_reinsurance_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix){
-   #Code Equal to insurance_outcomes function at the end.
-  num_IC =  dim(weights)[3]
-  num_sim_runs =  dim(weights)[1]
-  result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
-  #Write Initial Capital 
-  result_matrix[1,] = initial_wealth_array
-  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
-  n_runs =  ncol(verification_set)
-  for (i in 1:num_IC){
-    
-    VaR = 0 
-    realized_result = 0
-    model_premium_without_expense_ratio = 0 
-    implied_premiums_with_expense_ratio = 0
-    VaR_Penalty_Sum = 0
-    probability_of_loss = 0
-    
-        for (k in 1:num_sim_runs){
-   #Get Active weights.
-           active_weight = weights[k,,i]
-  
-            'Calculate Return'
-  returnvector <- colSums(active_weight %*% verification_set)
-    
-    #First Append Data, so it can be used for the reinsurance case later as well with     # a static id to map correlation.
-    
-        if(i*k == 1){ 
-       statistical_distributions =    as.data.frame(cbind(returnvector, rep(initial_wealth_array[i], n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
-         colnames(statistical_distributions) <- c("Profit", "Initial_Wealth", "Simulation_Number", "Damage_Year_Epoch", "Number_IC")   
-    } else {
-      new_rows = as.data.frame(cbind(returnvector, rep(initial_wealth_array[i], n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
-      colnames(new_rows) <- c("Profit", "Initial_Wealth", "Simulation_Number", "Damage_Year_Epoch", "Number_IC") 
-      statistical_distributions = rbind(statistical_distributions, new_rows)
-      
-        
-      }
-    
+calculate_reinsurance_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix, mode){
 
-  returnvector = sort(returnvector, decreasing = T)
-  #Get Number of runs to calculate Var 99.5. Algorithm: Divide n_runs by 200 and multiply this number by 199 (position of VAR) rounded up
-  n_runs =  ncol(verification_set)
-  VAR_position = ceiling((n_runs / 200)* 199)
-  VaR <- returnvector[VAR_position] + VaR
-  realized_result <- mean(returnvector)
-  #Premiums need to be scaled down by 1000. The model premium is calculated by 
-  model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
-  #With the expenseratio added
-  implied_premiums_with_expense_ratio = (colSums(active_weight %*% (premium_array))) /0.7 + implied_premiums_with_expense_ratio
-probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probability_of_loss
+ num_IC =  dim(weights)[3]
+ num_sim_runs =  dim(weights)[1]
+ insurance_outcome = calculate_insurance_outcomes(weights, verification_set, initial_wealth_array, 1)
+ statistical_distributions = insurance_outcome[[2]]
+ returnvector = insurance_outcome[[3]]
+    #Code Equal to insurance_outcomes function at the end.
+#   num_IC =  dim(weights)[3]
+#   num_sim_runs =  dim(weights)[1]
+#   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
+#   #Write Initial Capital 
+#   result_matrix[1,] = initial_wealth_array
+#   rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
+#   n_runs =  ncol(verification_set)
+#   for (i in 1:num_IC){
+#     
+#     VaR = 0 
+#     realized_result = 0
+#     model_premium_without_expense_ratio = 0 
+#     implied_premiums_with_expense_ratio = 0
+#     VaR_Penalty_Sum = 0
+#     probability_of_loss = 0
+#     
+#         for (k in 1:num_sim_runs){
+#    #Get Active weights.
+#            active_weight = weights[k,,i]
+#   
+#             'Calculate Return'
+#   returnvector <- colSums(active_weight %*% verification_set)
+#     
+#     #First Append Data, so it can be used for the reinsurance case later as well with     # a static id to map correlation.
+#     
+#         if(i*k == 1){ 
+#        statistical_distributions =    as.data.frame(cbind(returnvector, rep(initial_wealth_array[i], n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+#          colnames(statistical_distributions) <- c("Profit", "Initial_Wealth", "Simulation_Number", "Damage_Year_Epoch", "Number_IC")   
+#     } else {
+#       new_rows = as.data.frame(cbind(returnvector, rep(initial_wealth_array[i], n_runs), rep(k, n_runs), c(1:n_runs), rep(i,n_runs)))
+#       colnames(new_rows) <- c("Profit", "Initial_Wealth", "Simulation_Number", "Damage_Year_Epoch", "Number_IC") 
+#       statistical_distributions = rbind(statistical_distributions, new_rows)
+#       
+#         
+#       }
+#     
+# 
+#   returnvector = sort(returnvector, decreasing = T)
+#   #Get Number of runs to calculate Var 99.5. Algorithm: Divide n_runs by 200 and multiply this number by 199 (position of VAR) rounded up
+#   n_runs =  ncol(verification_set)
+#   VAR_position = ceiling((n_runs / 200)* 199)
+#   VaR <- returnvector[VAR_position] + VaR
+#   realized_result <- mean(returnvector)
+#   #Premiums need to be scaled down by 1000. The model premium is calculated by 
+#   model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
+#   #With the expenseratio added
+#   implied_premiums_with_expense_ratio = (colSums(active_weight %*% (premium_array))) /0.7 + implied_premiums_with_expense_ratio
+# probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probability_of_loss
+# 
+#     VaR_Penalty_Sum = ifelse(initial_wealth_array[i] < -returnvector[VAR_position],1,0) + VaR_Penalty_Sum
+#     #Create Dataframe with data in long format. if i*k=1 (first loop) create new df, else append to existing.
+# 
+#     
+#     #End Inner Loop
+#         }
+#     
+#     result_matrix[2,i] = VaR / num_sim_runs
+#     result_matrix[3,i] = VaR_Penalty_Sum 
+#     result_matrix[4,i] = realized_result / num_sim_runs
+#     result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_runs
+#     result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_runs
+#     result_matrix[7,i] = probability_of_loss / num_sim_runs
+#     
+#    
+#     
+#     
+#   }
+#   
+# output_insurance = list(result_matrix,statistical_distributions)
+# names(output_insurance) = c("Summary_Statistics", "Outcomes_Long_Format")
 
-    VaR_Penalty_Sum = ifelse(initial_wealth_array[i] < -returnvector[VAR_position],1,0) + VaR_Penalty_Sum
-    #Create Dataframe with data in long format. if i*k=1 (first loop) create new df, else append to existing.
-
-    
-    #End Inner Loop
-        }
-    
-    result_matrix[2,i] = VaR / num_sim_runs
-    result_matrix[3,i] = VaR_Penalty_Sum 
-    result_matrix[4,i] = realized_result / num_sim_runs
-    result_matrix[5,i] = model_premium_without_expense_ratio / num_sim_runs
-    result_matrix[6,i] = implied_premiums_with_expense_ratio / num_sim_runs
-    result_matrix[7,i] = probability_of_loss / num_sim_runs
-    
-   
-    
-    
-  }
-  
-output_insurance = list(result_matrix,statistical_distributions)
-names(output_insurance) = c("Summary_Statistics", "Outcomes_Long_Format")
 
 #Start the Reinsurance specific Analysis here
 #Number of reinsurance Companies
@@ -256,7 +267,7 @@ reinsurance_weights = cbind(c(1:num_IC),reinsurance_matrix[i,])
 colnames(reinsurance_weights) = c("Number_IC", "Quota_Share")
 
 #Get the Reinsurance Losses by looking up the Quota_Shares from the reinsurer
-reinsurance_outcomes = statistical_distributions %>%  ungroup() %>% left_join(reinsurance_weights, copy = T) %>% mutate(Reinsurance_profit = Quota_Share * Profit) %>% group_by(Simulation_Number,Damage_Year_Epoch) %>% summarize(reinsurance_epoch_loss = sum(Reinsurance_profit)) %>% group_by(Simulation_Number) %>% group_split
+reinsurance_outcomes = statistical_distributions %>%  ungroup() %>% left_join(reinsurance_weights, copy = T,by = c("Simulation_Number" = "Number_IC")) %>% mutate(Reinsurance_profit = Quota_Share * Profit) %>% group_by(Simulation_Number,Damage_Year_Epoch) %>% summarize(reinsurance_epoch_loss = sum(Reinsurance_profit)) %>% group_by(Simulation_Number) %>% group_split
 
 #Iterate through the simulation runs to calculate reinsurance outcomes
     VaR = 0 
@@ -843,8 +854,8 @@ print(p)
 #nrow = number of reinsurers, ncol = number of insurerance companies.
 reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
 
-test_outcome1 = calculate_insurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW)
-test_outcome2 = calculate_reinsurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW, reinsurance_matrix_1)
+test_outcome1 = calculate_insurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW, 1)
+test_outcome2 = calculate_reinsurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW, reinsurance_matrix_1, 0)
 
 #Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
 
@@ -891,32 +902,32 @@ scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outco
 
 # IMPORTANT: Because we pass 100% through the reinsurance sector, there seems to be a bug that counts the profit and outcomes double. Will be fixed in the next version
 
-ils_pseudo_array = array(dim = c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2))
+#ils_pseudo_array = array(dim = #c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2))
 
 
 #Get the results of the main optimization [first simulation result]
-ils_pseudo_array[,,1] = ils_beazley_case[1,,,1]
-ils_pseudo_array[,,2] = ils_beazley_case[1,,,1]
+#ils_pseudo_array[,,1] = ils_beazley_case[1,,,1]
+#ils_pseudo_array[,,2] = ils_beazley_case[1,,,1]
 
 
 #Bond Value, double matrix for input
 
 ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
 bond_value = c(5e3)
-ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
+#ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
 
 #Capital Curve ILS
 
-dim_cc = dim(ils_beazley_case)[[1]]
-capital_curve_ils_pseudo_array = array(dim = c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2)) 
+#dim_cc = dim(ils_beazley_case)[[1]]
+#capital_curve_ils_pseudo_array = array(dim = c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2)) 
 
 capital_curve_overview = matrix(nrow = dim_cc, ncol = 1)
 
 for (i in 1:1){
   #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
-  capital_curve_ils_pseudo_array[,,1] = ils_beazley_case[i,,,]
-  capital_curve_ils_pseudo_array[,,2] = ils_beazley_case[i,,,]
-  current_values_cc = calculate_insurance_outcomes(capital_curve_ils_pseudo_array, verification_set, scenario_4_CC_IW[i])
+  #capital_curve_ils_pseudo_array[,,1] = ils_beazley_case[i,,,]
+  #capital_curve_ils_pseudo_array[,,2] = ils_beazley_case[i,,,]
+#  current_values_cc = calculate_insurance_outcomes(capital_curve_ils_pseudo_array, verification_set, scenario_4_CC_IW[i])
   print(i)
 capital_curve_overview[i,1] = current_values_cc[[1]][4,1]
   
@@ -926,7 +937,7 @@ print(capital_curve_overview)
 #Profit Insurer with $35M,currently hard coded.
 
 scenario_35M_noILS = 1776
-print(ils_bond_results_1)
+#print(ils_bond_results_1)
 
 ```
 
@@ -935,11 +946,11 @@ print(ils_bond_results_1)
 
 bond_value_attatchment = c(5e3)
 
-ils_attatchment1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.995)
+#ils_attatchment1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.995)
 
-ils_attatchment2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.99)
+#ils_attatchment2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.99)
 
-ils_attatchment3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.98)
+#ils_attatchment3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.98)
 
 different_attatchment_points = rbind(ils_attatchment1[[3]][[1]],ils_attatchment2[[3]][[1]],ils_attatchment3[[3]][[1]])
 
@@ -955,17 +966,17 @@ print(ils_attatchment1)
 #Different Bond Values
 bond_value_attatchment = c(5e3,6e3,7e3,8e3,9e3,10e3)
 
-ils_different_bond_value1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[1],1, 0.02,.995)
+#ils_different_bond_value1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[1],1, 0.02,.995)
 
-ils_different_bond_value2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[2],1, 0.02,.995)
+#ils_different_bond_value2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[2],1, 0.02,.995)
 
-ils_different_bond_value3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[3],1, 0.02,.995)
+#ils_different_bond_value3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[3],1, 0.02,.995)
 
-ils_different_bond_value4 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[4],1, 0.02,.995)
+#ils_different_bond_value4 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[4],1, 0.02,.995)
 
-ils_different_bond_value5 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[5],1, 0.02,.995)
+#ils_different_bond_value5 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[5],1, 0.02,.995)
 
-ils_different_bond_value6 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[6],1, 0.02,.995)
+#ils_different_bond_value6 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[6],1, 0.02,.995)
 
 different_bond_values = rbind(ils_different_bond_value1[[3]][[1]],ils_different_bond_value2[[3]][[1]],ils_different_bond_value3[[3]][[1]],ils_different_bond_value4[[3]][[1]],ils_different_bond_value5[[3]][[1]],ils_different_bond_value6[[3]][[1]])
 
