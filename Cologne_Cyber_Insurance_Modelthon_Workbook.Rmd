@@ -77,8 +77,9 @@ load_coalition_data <- function() {
 #'
 #' @param weights 2-Dimensional Array with the outcomes of main simulation or manually set weights. Needs to be fed all Insurance Companies for a given model.
 #' @param verification_Set Verification set with "fresh" data to verifiy to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
-#' @output Returns a list with the VaR, average return, many more summary statistics and a data.frame with the outcomes in the long (=dplyr & ggplot2 friendly) format.
+#' @param initial_wealth_array 
 #' @param mode Integer where 1 returns additional values used by higher order functions and 0 returns just the result
+#' @output Returns a list with the VaR, average return, many more summary statistics and a data.frame with the outcomes in the long (=dplyr & ggplot2 friendly) format.
 
 calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth_array, mode){
   #Get Result Dimensions from the dimension of the weight
@@ -167,8 +168,10 @@ probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probab
 #'
 #' @param weights 2-Dimensional Array with the outcomes of main simulation or manually set weights. Needs to be fed all Insurance Companies for a given model. But instead of a single weight, all relevant insurance companies in a given model scenario need to be supplied, otherwise, reinsurance wouldn't make sense.
 #' @param verification_Set Verification set with "fresh" data to verify to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
+#' @param initial_wealth_array
 #' @param reinsurance_matrix A Reinsurance matrix with number of insurance companies equal to the columns 
-#' @output Returns a list with tons of good stuff!
+#' @param mode 
+#' @output Returns a list with Insurance Outcomes and Reinsurance Outcomes
 #'
 calculate_reinsurance_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix, mode){
 
@@ -336,8 +339,12 @@ return(final_output)
 #'
 #' @param weights 2-Dimensional Array with the outcomes of main simulation or manually set weights. Needs to be fed all Insurance Companies for a given model. But instead of a single weight, all relevant insurance companies in a given model scenario need to be supplied, otherwise, reinsurance wouldn't make sense.
 #' @param verification_Set Verification set with "fresh" data to verify to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
+#' @param initial_wealth_array
 #' @param reinsurance_matrix A Reinsurance matrix with number of insurance companies equal to the columns 
-#' @output Returns a list with tons of good stuff!
+#' @param bond_value
+#' @param target_sharpe_ratio
+#' @param risk_free_rate
+#' @output Returns a list with Insurance Outcomes, Reinsurance Outcomes, ILS Outcomes
 #'
 calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix, bond_value,target_sharpe_ratio, risk_free_rate){
   
@@ -556,8 +563,13 @@ return(final_output)
 #'
 #' @param weights 2-Dimensional Array with the outcomes of main simulation or manually set weights. Needs to be fed all Insurance Companies for a given model. But instead of a single weight, all relevant insurance companies in a given model scenario need to be supplied, otherwise, reinsurance wouldn't make sense.
 #' @param verification_Set Verification set with "fresh" data to verify to main optimization results on.Number of Rows equal to number of Columns of optimal weights for Matrix Multiplication.
+#' @param initial_wealth_array
 #' @param reinsurance_matrix A Reinsurance matrix with number of insurance companies equal to the columns 
-#' @output Returns a list with tons of good stuff!
+#' @param bond_value
+#' @param target_sharpe_ratio
+#' @param risk_free_rate
+#' @param VaR_Position_ILS
+#' @output Returns a list with Insurance Outcomes, Reinsurance Outcomes, ILS Outcomes
 #'
 calculate_reinsurance_ils_hypothetical_bond_outcome <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix,bond_value,target_sharpe_ratio, risk_free_rate, VaR_Position_ILS){
    #Code Equal to insurance_outcomes function at the end.
