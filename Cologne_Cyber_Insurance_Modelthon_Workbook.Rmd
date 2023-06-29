@@ -339,7 +339,7 @@ return(final_output)
 #' @param reinsurance_matrix A Reinsurance matrix with number of insurance companies equal to the columns 
 #' @output Returns a list with tons of good stuff!
 #'
-calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix, mode, bond_value,target_sharpe_ratio, risk_free_rate){
+calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix, bond_value,target_sharpe_ratio, risk_free_rate){
   
   final_output = calculate_reinsurance_outcomes(weights, verification_set, initial_wealth_array, reinsurance_matrix, 1)
   reinsurance_result_matrix = final_output[[2]][[1]]
@@ -347,6 +347,8 @@ calculate_reinsurance_ils_outcomes <- function(weights, verification_set, initia
   num_rc = final_output[[2]][[3]]
   num_sim_runs = final_output[[2]][[4]]
   n_runs = final_output[[2]][[5]]
+  output_insurance = final_output[[1]]
+  output_reinsurance = final_output[[1]]
   
 #    #Code Equal to insurance_outcomes function at the end.
 #   num_IC =  dim(weights)[3]
@@ -899,6 +901,7 @@ scenario_3_results = calculate_reinsurance_outcomes(constrained_optimization_res
 
 bond_value_array = c(21,10.5,5.25,2.6) 
 
+#(weights, verification_set, initial_wealth_array, reinsurance_matrix, mode, bond_value,target_sharpe_ratio, risk_free_rate)
 scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimization_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,1, 0.02)
 
 
@@ -926,8 +929,8 @@ scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outco
 
 #Bond Value, double matrix for input
 
-ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
-bond_value = c(5e3)
+# ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
+# bond_value = c(5e3)
 #ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
 
 #Capital Curve ILS
@@ -935,42 +938,44 @@ bond_value = c(5e3)
 #dim_cc = dim(ils_beazley_case)[[1]]
 #capital_curve_ils_pseudo_array = array(dim = c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2)) 
 
-capital_curve_overview = matrix(nrow = dim_cc, ncol = 1)
+# capital_curve_overview = matrix(nrow = dim_cc, ncol = 1)
 
 for (i in 1:1){
   #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
   #capital_curve_ils_pseudo_array[,,1] = ils_beazley_case[i,,,]
   #capital_curve_ils_pseudo_array[,,2] = ils_beazley_case[i,,,]
 #  current_values_cc = calculate_insurance_outcomes(capital_curve_ils_pseudo_array, verification_set, scenario_4_CC_IW[i])
-  print(i)
-capital_curve_overview[i,1] = current_values_cc[[1]][4,1]
-  
-}
-print(capital_curve_overview)
+#   print(i)
+# capital_curve_overview[i,1] = current_values_cc[[1]][4,1]
+#   
+# }
+# print(capital_curve_overview)
 
 #Profit Insurer with $35M,currently hard coded.
 
-scenario_35M_noILS = 1776
+# scenario_35M_noILS = 1776
 #print(ils_bond_results_1)
 
 ```
 
 ```{r}
+/*
+
 #Bond Values with different attachtments points:
-
-bond_value_attatchment = c(5e3)
-
-#ils_attatchment1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.995)
+# 
+# bond_value_attatchment = c(5e3)
+# 
+# ils_attatchment1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.995)
 
 #ils_attatchment2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.99)
 
 #ils_attatchment3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.98)
 
-different_attatchment_points = rbind(ils_attatchment1[[3]][[1]],ils_attatchment2[[3]][[1]],ils_attatchment3[[3]][[1]])
-
-print(different_attatchment_points)
-print(ils_attatchment1)
-```
+# different_attatchment_points = rbind(ils_attatchment1[[3]][[1]],ils_attatchment2[[3]][[1]],ils_attatchment3[[3]][[1]])
+# 
+# print(different_attatchment_points)
+# print(ils_attatchment1)
+# ```
 
 
 
@@ -978,7 +983,7 @@ print(ils_attatchment1)
 ```{r}
 
 #Different Bond Values
-bond_value_attatchment = c(5e3,6e3,7e3,8e3,9e3,10e3)
+# bond_value_attatchment = c(5e3,6e3,7e3,8e3,9e3,10e3)
 
 #ils_different_bond_value1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[1],1, 0.02,.995)
 
@@ -992,9 +997,9 @@ bond_value_attatchment = c(5e3,6e3,7e3,8e3,9e3,10e3)
 
 #ils_different_bond_value6 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[6],1, 0.02,.995)
 
-different_bond_values = rbind(ils_different_bond_value1[[3]][[1]],ils_different_bond_value2[[3]][[1]],ils_different_bond_value3[[3]][[1]],ils_different_bond_value4[[3]][[1]],ils_different_bond_value5[[3]][[1]],ils_different_bond_value6[[3]][[1]])
-
-print(different_bond_values)
+# different_bond_values = rbind(ils_different_bond_value1[[3]][[1]],ils_different_bond_value2[[3]][[1]],ils_different_bond_value3[[3]][[1]],ils_different_bond_value4[[3]][[1]],ils_different_bond_value5[[3]][[1]],ils_different_bond_value6[[3]][[1]])
+# 
+# print(different_bond_values)
 ```
 
 
@@ -1004,7 +1009,7 @@ print(different_bond_values)
 
 ```{r}
 #Start Graphics
-plot_insurance_distributions(ils_different_bond_value1)
+# plot_insurance_distributions(ils_different_bond_value1)
 
 
 
