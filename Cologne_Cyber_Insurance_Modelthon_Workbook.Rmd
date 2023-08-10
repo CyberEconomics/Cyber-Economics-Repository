@@ -22,30 +22,20 @@ library(forcats)
 
 wd = getwd()
 
-#load files from priv repo
+#load files from August 23 with attritional damages.
 load(paste0(wd,"/data/unconstrained_results.rdata"))
-unconstrained_results = SimulationresultArray
-load(paste0(wd,"/data/constrained_optimization.rdata"))
-constrained_results = SimulationresultArray
-load(paste0(wd,"/data/capital_curve_priv.RData"))
-capital_curve_new = SimulationresultArray
+
+load(paste0(wd,"/data/constrained_results.rdata"))
+
+load(paste0(wd,"/data/capital_curve_results.RData"))
 
 
-#Loading DAmage, Premium and Expense Ratio Data
-load(paste0(wd,"/data/general_input_august23.rdata"))
+#Loading DDamages
+load(paste0(wd,"/data/verification_set.rdata"))
 
-#Loading Solutions First Optimizaton
-load(paste0(wd,"/data/solution_model_1.RData"))
-
-#Loading Data for Second Optimization
-load(paste0(wd,"/data/solution_model_2.RData"))
-
-#Loading Data for premium
+#Loading Data for premium per sector
 load(paste0(wd,"/data/premium_array.RData"))
 
-load(paste0(wd,"/data/71-buckets.RData"))
-#Load Data constrained Optimization
-load(paste0(wd,"/data/constrained.RData"))
 
 #load ILS Scenario Data
 load(paste0(wd,"/data/ils_scenario_data.RData"))
@@ -139,7 +129,7 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
   #Premiums need to be scaled down by 1000. The model premium is calculated by 
   model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
  
-  #With the expenseratio added
+  #With the expenseratio added assuming 55% Loss Ratio, 15% Profit Margin and 30% Expense
   implied_premiums_with_expense_ratio = (colSums(active_weight %*% (premium_array))) /0.7 + implied_premiums_with_expense_ratio
 probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probability_of_loss
 
@@ -421,7 +411,7 @@ calculate_reinsurance_ils_hypothetical_bond_outcome <- function(weights, verific
   realized_result <- mean(returnvector)
   #Premiums need to be scaled down by 1000. The model premium is calculated by 
   model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
-  #With the expenseratio added
+  #With the expenseratio added, assuming 55% Loss Ratio, 15% Profit Margin and 30% Expense
   implied_premiums_with_expense_ratio = (colSums(active_weight %*% (premium_array))) /0.7 + implied_premiums_with_expense_ratio
 probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probability_of_loss
 
@@ -676,57 +666,6 @@ print(p)
 ```
 
 ```{r}
-#Start Analysis
-
-
-
-#Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
-#nrow = number of reinsurers, ncol = number of insurerance companies.
-reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
-
-test_outcome1 = calculate_insurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW, 1)
-test_outcome2 = calculate_reinsurance_outcomes(Model_1_Solutions, verification_set, scenario_1_IW, reinsurance_matrix_1, 0)
-
-#Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
-
-#Dimension of capital curve, first is number of IW_setups, which gives us the duartion of the loop We need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value.
-
-
-dim_cc = dim(capital_curve)[[1]]
-capital_curve_pseudo_array = array(dim = c(dim(capital_curve)[[2]],dim(capital_curve)[[3]],2)) 
-
-capital_curve_overview = matrix(nrow = 7, ncol = dim_cc)
-
-for (i in 1:dim_cc){
-  #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
-  capital_curve_pseudo_array[,,1] = capital_curve[i,,,]
-  capital_curve_pseudo_array[,,2] = capital_curve[i,,,]
-  current_values_cc = calculate_insurance_outcomes(capital_curve_pseudo_array, verification_set, scenario_2_IW[i], 1)
-capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
-  
-}
-
-#Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med
-
-
-scenario_3_results = calculate_reinsurance_outcomes(constrained_optimization_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1, 1)
-
-#ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
-
-bond_value_array = c(21,10.5,5.25,2.6) 
-
-#(weights, verification_set, initial_wealth_array, reinsurance_matrix, mode, bond_value,target_sharpe_ratio, risk_free_rate)
-scenario_3_results_ils = calculate_reinsurance_ils_outcomes(constrained_optimization_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,1, 0.02)
-
-
-#ILS Outcomes with Reinsurance Outcomes
-
-scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_optimization_results[1,,,], verification_set, scenario_4_IW, reinsurance_matrix_1,bond_value_array,1, 0.02,.99)
-
-
-```
-
-```{r}
 # ILS Scenario Big Primary Insurer. Set reinsurance matrix equal to 1 to pass through bond.
 
 #Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. Fixing this is a to-do of a later version
@@ -772,7 +711,7 @@ scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outco
 
 ```
 
-#```{r}
+```{r}
 
 
 #Bond Values with different attachtments points:
@@ -810,20 +749,20 @@ scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outco
 # different_bond_values = rbind(ils_different_bond_value1[[3]][[1]],ils_different_bond_value2[[3]][[1]],ils_different_bond_value3[[3]][[1]],ils_different_bond_value4[[3]][[1]],ils_different_bond_value5[[3]][[1]],ils_different_bond_value6[[3]][[1]])
 # 
 # print(different_bond_values)
-#```
+```
 
 
 
 
 
 
-#```{r}
+```{r}
 #Start Graphics
 # plot_insurance_distributions(ils_different_bond_value1)
 
 
 
-#```
+```
 
 ```{r}
 
@@ -839,15 +778,21 @@ scenario_3_results_ils_RP200 = calculate_reinsurance_ils_hypothetical_bond_outco
 reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
 
 test_outcome1_unconstrained = calculate_insurance_outcomes(unconstrained_results[1,,,], verification_set, IW_array, 1)
-test_outcome2_unconstrained = calculate_reinsurance_outcomes(unconstrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1, 0)
 
 test_outcome1_constrained = calculate_insurance_outcomes(constrained_results[1,,,], verification_set, IW_array, 1)
+
+
+test_outcome2_unconstrained = calculate_reinsurance_outcomes(unconstrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1, 0)
+
 test_outcome2_constrained = calculate_reinsurance_outcomes(constrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1, 0)
 
 #Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
 
 #Dimension of capital curve, first is number of IW_setups, which gives us the duartion of the loop We need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value.
 
+#There was a typo in the capital_curve_results, misspelled with an extra s. Adjust in this line:
+
+capital_curve_new = capital_curve_resuslts
 
 dim_cc = dim(capital_curve_new)[[1]]
 capital_curve_pseudo_array = array(dim = c(dim(capital_curve_new)[[2]],dim(capital_curve_new)[[3]],2)) 
