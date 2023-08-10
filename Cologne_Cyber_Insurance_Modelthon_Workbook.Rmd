@@ -41,7 +41,7 @@ load(paste0(wd,"/data/solution_model_1.RData"))
 load(paste0(wd,"/data/solution_model_2.RData"))
 
 #Loading Data for premium
-load(paste0(wd,"/data/premiumarray.RData"))
+load(paste0(wd,"/data/premium_array.RData"))
 
 load(paste0(wd,"/data/71-buckets.RData"))
 #Load Data constrained Optimization
@@ -60,6 +60,7 @@ scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3)
 scenario_4_IW = c(3e4)
 scenario_4_CC_IW = c(3e4,3.5e4,4e4,4.5e4,5e4 )
 IW_array = c(1e4, 5e3, 2.5e3,1e3,5e2)
+IW_array_capital_curve = c(4e4,3e4,2e4,1e4,0.5e4,0.25e4,0.1e4,0.05e4)
 
 #More Information:
 #Scenario 1: Standard Optimization, No Constraints
