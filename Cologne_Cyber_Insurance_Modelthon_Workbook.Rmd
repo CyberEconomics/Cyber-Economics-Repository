@@ -36,6 +36,8 @@ load(paste0(wd,"/data/verification_set.rdata"))
 #Loading Data for premium per sector
 load(paste0(wd,"/data/premium_array.RData"))
 
+#Load Var 95.0 Results
+
 
 #load ILS Scenario Data
 load(paste0(wd,"/data/ils_scenario_data.RData"))
@@ -49,6 +51,7 @@ scenario_2_IW = c(6:15*1e3)
 scenario_3_IW = c(5e3,2.5e3,1.5e3,1.25e3,0.7e3) 
 scenario_4_IW = c(3e4)
 scenario_4_CC_IW = c(3e4,3.5e4,4e4,4.5e4,5e4 )
+scenario_5_IW = c(10e3,5e3,2.5e3,1.25e3,0.625e3)
 IW_array = c(1e4, 5e3, 2.5e3,1e3,5e2)
 IW_array_capital_curve = c(4e4,3e4,2e4,1e4,0.5e4,0.25e4,0.1e4,0.05e4)
 
@@ -88,7 +91,7 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
-  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Implied Expense Ratio", "Avg. Probability of Loss" )
+  rownames(result_matrix) <- c("Initial Wealth (IW) in Thousand", "Avg. VaR 99.5% (RP200) in Thousand", "Sum of VaR-Violations", "Avg. Profit in Thousand", "Model Premium", "Implied Expense Ratio", "Avg. Probability of Loss" )
   n_runs =  ncol(verification_set)
   for (i in 1:num_IC){
     
@@ -370,7 +373,7 @@ calculate_reinsurance_ils_hypothetical_bond_outcome <- function(weights, verific
   result_matrix <- data.frame(matrix(ncol = num_IC, nrow = 7))
   #Write Initial Capital 
   result_matrix[1,] = initial_wealth_array
-  rownames(result_matrix) <- c("Initial Wealth (IW)", "Avg. VaR 99.5% (RP200)", "Sum of VaR-Violations", "Avg. Profit", "Model Premium", "Premium with Expense Ratio", "Avg. Probability of Loss" )
+  rownames(result_matrix) <- c("Initial Wealth (IW) in Thousand", "Avg. VaR 99.5% (RP200) in Thousand", "Sum of VaR-Violations", "Avg. Profit in Thousand", "Model Premium", "Implied Expense Ratio", "Avg. Probability of Loss" )
   print(1)
   n_runs =  ncol(verification_set)
   for (i in 1:num_IC){
@@ -603,7 +606,7 @@ df_to_plot = as.data.frame(t(insurance_object[[1]][[1]]))
 df_to_plot[, "Avg. VaR 99.5% (RP200)"] = df_to_plot[, "Avg. VaR 99.5% (RP200)"] * -1
 values = cbind(df_to_plot,1:nrow(df_to_plot))  
 colnames(values)[ncol(values)] <- "Number_RC"
-values = pivot_longer(values, cols = c("Initial Wealth (IW)","Avg. VaR 99.5% (RP200)","Model Premium", "Avg. Profit", "Premium with Expense Ratio"))
+values = pivot_longer(values, cols = c("Initial Wealth (IW) in Thousand", "Avg. VaR 99.5% (RP200) in Thousand", "Sum of VaR-Violations", "Avg. Profit in Thousand", "Model Premium", "Implied Expense Ratio", "Avg. Probability of Loss" ))
 
 colors = c("red","blue","green","yellow","black")
 #Meltdown the to the long format. Add a dummy variable "type" to map the different outputs of the transformation to the to be graphed data.
@@ -663,92 +666,52 @@ p = p + theme_bw() + geom_line(data = df_to_plot_simu_1,aes(y=as.numeric(outcome
 print(p)
 }
 }
-```
 
-```{r}
-# ILS Scenario Big Primary Insurer. Set reinsurance matrix equal to 1 to pass through bond.
+### Graphing Functions
+plot_22_reinsurance <- function(data) {
+  
+  x_values <- c("X1", "X2", "X3", "X4")
+  
+  y_values <- c("Avg. VaR 99.5% (RP200)", "Avg. Profit", 
+                "Primary Model Premium Share", "Avg. Probability of Loss")
+  
+  df <- data.frame(x = factor(rep(x_values, each = length(y_values))),
+                   y = unlist(data[y_values]))
+  
+  plot <- ggplot(df, aes(x = x, y = y)) +
+    geom_bar(stat = "identity", fill = "dodgerblue3") +
+    facet_grid(y ~ ., scales = "free", space = "free") +
+    labs(x = NULL) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  
+  return(plot)
+}
 
-#Similar to the capital curve, we need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. Fixing this is a to-do of a later version
+# Example usage:
+# Function to create 2x2 plot
+# Function to create 2x2 plot
+plot_matrix <- function(data) {
+  # Convert the list into a dataframe
+  df <- as.data.frame(data)
+  
+  # Reshape the data to plot
+  df <- reshape2::melt(df)
+  
+  # Create the plot using ggplot2
+  plot <- ggplot(df, aes(x = variable, y = value)) +
+    geom_bar(stat = "identity", position = "dodge", fill = "steelblue") +
+    facet_wrap(~ variable, scales = "free_y", ncol = 2) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(x = "", y = "")
+  
+  return(plot)
+}
 
-# IMPORTANT: Because we pass 100% through the reinsurance sector, there seems to be a bug that counts the profit and outcomes double. Will be fixed in the next version
-
-#ils_pseudo_array = array(dim = #c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2))
-
-
-#Get the results of the main optimization [first simulation result]
-#ils_pseudo_array[,,1] = ils_beazley_case[1,,,1]
-#ils_pseudo_array[,,2] = ils_beazley_case[1,,,1]
-
-
-#Bond Value, double matrix for input
-
-# ils_reinsurance_matrix = matrix(c(1,1), nrow = 1, ncol = 2)
-# bond_value = c(5e3)
-#ils_bond_results_1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value,1, 0.02,.995)
-
-#Capital Curve ILS
-
-#dim_cc = dim(ils_beazley_case)[[1]]
-#capital_curve_ils_pseudo_array = array(dim = c(dim(ils_beazley_case)[[2]],dim(ils_beazley_case)[[3]],2)) 
-
-# capital_curve_overview = matrix(nrow = dim_cc, ncol = 1)
-
-#for (i in 1:1){
-  #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
-  #capital_curve_ils_pseudo_array[,,1] = ils_beazley_case[i,,,]
-  #capital_curve_ils_pseudo_array[,,2] = ils_beazley_case[i,,,]
-#  current_values_cc = calculate_insurance_outcomes(capital_curve_ils_pseudo_array, verification_set, scenario_4_CC_IW[i])
-#   print(i)
-# capital_curve_overview[i,1] = current_values_cc[[1]][4,1]
-#   
-# }
-# print(capital_curve_overview)
-
-#Profit Insurer with $35M,currently hard coded.
-
-# scenario_35M_noILS = 1776
-#print(ils_bond_results_1)
-
-```
-
-```{r}
-
-
-#Bond Values with different attachtments points:
-# 
-# bond_value_attatchment = c(5e3)
-# 
-# ils_attatchment1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.995)
-
-#ils_attatchment2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.99)
-
-#ils_attatchment3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment,1, 0.02,.98)
-
-# different_attatchment_points = rbind(ils_attatchment1[[3]][[1]],ils_attatchment2[[3]][[1]],ils_attatchment3[[3]][[1]])
-# 
-# print(different_attatchment_points)
-# print(ils_attatchment1)
-# ```
-
-#```{r}
-#Different Bond Values
-# bond_value_attatchment = c(5e3,6e3,7e3,8e3,9e3,10e3)
-
-#ils_different_bond_value1 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[1],1, 0.02,.995)
-
-#ils_different_bond_value2 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[2],1, 0.02,.995)
-
-#ils_different_bond_value3 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[3],1, 0.02,.995)
-
-#ils_different_bond_value4 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[4],1, 0.02,.995)
-
-#ils_different_bond_value5 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[5],1, 0.02,.995)
-
-#ils_different_bond_value6 = calculate_reinsurance_ils_hypothetical_bond_outcome(ils_pseudo_array, verification_set, scenario_4_IW, ils_reinsurance_matrix,bond_value_attatchment[6],1, 0.02,.995)
-
-# different_bond_values = rbind(ils_different_bond_value1[[3]][[1]],ils_different_bond_value2[[3]][[1]],ils_different_bond_value3[[3]][[1]],ils_different_bond_value4[[3]][[1]],ils_different_bond_value5[[3]][[1]],ils_different_bond_value6[[3]][[1]])
-# 
-# print(different_bond_values)
+# Example usage
+test_outcome <- test_outcome2_constrained[[2]][[1]]
+plot <- plot_matrix(test_outcome)
+print(plot)
 ```
 
 
@@ -756,13 +719,10 @@ print(p)
 
 
 
-```{r}
-#Start Graphics
-# plot_insurance_distributions(ils_different_bond_value1)
 
 
 
-```
+
 
 ```{r}
 
@@ -775,7 +735,7 @@ print(p)
 
 #Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
 #nrow = number of reinsurers, ncol = number of insurerance companies.
-reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
+reinsurance_matrix_1 = rbind(rep(1,5),rep(1,5),rep(1,5),rep(1,5))
 
 test_outcome1_unconstrained = calculate_insurance_outcomes(unconstrained_results[1,,,], verification_set, IW_array, 1)
 
@@ -789,6 +749,30 @@ test_outcome2_constrained = calculate_reinsurance_outcomes(constrained_results[1
 #Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
 
 #Dimension of capital curve, first is number of IW_setups, which gives us the duartion of the loop We need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value.
+
+
+
+#ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
+
+bond_value_array = c(21,11,5.25,2.6) 
+bond_values_effiency_curve_ils = c(5000,5000	,1415.67,	707.83)
+
+#ILS effectivness
+scenario_3_results_ils_unconstrained = calculate_reinsurance_ils_outcomes(unconstrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,0.7, 0.02)
+scenario_3_results_ils_constrained = calculate_reinsurance_ils_outcomes(constrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,0.7, 0.02)
+
+#ILS effectivness
+scenario_3_results_ils_unconstrained_curve = calculate_reinsurance_ils_outcomes(unconstrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.02)
+scenario_3_results_ils_constrained_curve = calculate_reinsurance_ils_outcomes(constrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.02)
+
+#ILS Outcomes with Reinsurance Outcomes
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(unconstrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.02,.995)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.02,.995)
+
+#ILS Outcomes with Reinsurance Outcomes
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(unconstrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.02,.995)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.02,.995)
+
 
 #There was a typo in the capital_curve_results, misspelled with an extra s. Adjust in this line:
 
@@ -808,18 +792,77 @@ capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
   
 }
 
+
+```
+
+
+```{r}
+
+#Start Analysis Jan 2024, Value at riskis is at 95% insteadof 99.5%.
+#unconstrained_results 
+#constrained_results
+#capital_curve_new 
+#IW_array = c(1e4, 5e3, 2.5e3,1e3,5e2)
+
+
+#Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
+#nrow = number of reinsurers, ncol = number of insurerance companies.
+reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
+
+test_outcome1_unconstrained = calculate_insurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, 1)
+
+test_outcome1_constrained = calculate_insurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, 1)
+
+
+test_outcome2_unconstrained = calculate_reinsurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1, 0)
+
+test_outcome2_constrained = calculate_reinsurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1, 0)
+
+#Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
+
+#Dimension of capital curve, first is number of IW_setups, which gives us the duartion of the loop We need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value.
+
+
+
 #ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
 
 bond_value_array = c(21,10.5,5.25,2.6) 
+bond_values_effiency_curve_ils = c(7.273063e+03, 3.636531e+03, 1.818266e+03,	9.091329e+02)
 
-#(weights, verification_set, initial_wealth_array, reinsurance_matrix, mode, bond_value,target_sharpe_ratio, risk_free_rate)
-scenario_3_results_ils_unconstrained = calculate_reinsurance_ils_outcomes(unconstrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,1, 0.02)
-scenario_3_results_ils_constrained = calculate_reinsurance_ils_outcomes(constrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,1, 0.02)
+#ILS effectivness
+scenario_3_results_ils_unconstrained = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,0.7, 0.04)
+scenario_3_results_ils_constrained = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,0.7, 0.04)
 
+#ILS effectivness
+scenario_3_results_ils_unconstrained_curve = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04)
+scenario_3_results_ils_constrained_curve = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04)
 
 #ILS Outcomes with Reinsurance Outcomes
-scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(unconstrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,1, 0.02,.99)
-scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,1, 0.02,.99)
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.04,.95)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.04,.95)
+
+#ILS Outcomes with Reinsurance Outcomes
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04,.95)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04,.95)
+
+
+#There was a typo in the capital_curve_results, misspelled with an extra s. Adjust in this line:
+
+capital_curve_new = capital_curve_resuslts
+
+dim_cc = dim(capital_curve_new)[[1]]
+capital_curve_pseudo_array = array(dim = c(dim(capital_curve_new)[[2]],dim(capital_curve_new)[[3]],2)) 
+
+capital_curve_overview = matrix(nrow = 7, ncol = dim_cc)
+
+for (i in 1:dim_cc){
+  #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
+  capital_curve_pseudo_array[,,1] = capital_curve_new[i,,,]
+  capital_curve_pseudo_array[,,2] = capital_curve_new[i,,,]
+  current_values_cc = calculate_insurance_outcomes(capital_curve_pseudo_array, verification_set, IW_array[i], 1)
+capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
+  
+}
 
 
 ```
