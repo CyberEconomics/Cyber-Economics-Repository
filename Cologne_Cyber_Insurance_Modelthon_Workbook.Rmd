@@ -37,12 +37,13 @@ load(paste0(wd,"/data/verification_set.rdata"))
 load(paste0(wd,"/data/premium_array.RData"))
 
 #Load Var 95.0 Results
-
+load(paste0(wd,"/data/premium_array.RData"))
 
 #load ILS Scenario Data
-load(paste0(wd,"/data/ils_scenario_data.RData"))
+load(paste0(wd,"/data/var95.0_data.RData"))
 
-#load ILS Scenario Primary Insurer "Beazley"
+#load ILS Scenario Data
+#load(paste0(wd,"/data/var90.0_data.RData"))
 
 
 #Hardcoded IW-Arrays
@@ -128,7 +129,7 @@ calculate_insurance_outcomes <- function(weights,verification_set,initial_wealth
   n_runs =  ncol(verification_set)
   VAR_position = ceiling((n_runs / 200)* 199)
   VaR <- returnvector[VAR_position] + VaR
-  realized_result <- mean(returnvector)
+  realized_result <- mean(returnvector) + realized_result
   #Premiums need to be scaled down by 1000. The model premium is calculated by 
   model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
  
@@ -227,9 +228,9 @@ reinsurance_return_vector = sort(reinsurance_outcomes[[k]][["reinsurance_epoch_l
       }
 #Array is flipped_so need 
 n_runs =  length(reinsurance_return_vector)
-VAR_position = n_runs - ceiling((n_runs / 200)* 199)
+VAR_position = n_runs - ceiling((n_runs / 200) *199)
 VaR <- reinsurance_return_vector[VAR_position] + VaR
-realized_result <- mean(reinsurance_return_vector)  
+realized_result <- mean(reinsurance_return_vector) + realized_result
 probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_runs) + probability_of_loss
  
 }
@@ -409,9 +410,9 @@ calculate_reinsurance_ils_hypothetical_bond_outcome <- function(weights, verific
   returnvector = sort(returnvector, decreasing = T)
   #Get Number of runs to calculate Var 99.5. Algorithm: Divide n_runs by 200 and multiply this number by 199 (position of VAR) rounded up
   n_runs =  ncol(verification_set)
-  VAR_position = ceiling((n_runs / 200)* 199)
+  VAR_position = ceiling(n_runs * VaR_Position_ILS)
   VaR <- returnvector[VAR_position] + VaR
-  realized_result <- mean(returnvector)
+  realized_result <- mean(returnvector) + realized_result
   #Premiums need to be scaled down by 1000. The model premium is calculated by 
   model_premium_without_expense_ratio = (colSums(active_weight %*% (premium_array))) + model_premium_without_expense_ratio
   #With the expenseratio added, assuming 55% Loss Ratio, 15% Profit Margin and 30% Expense
@@ -436,6 +437,8 @@ probability_of_loss = (length(returnvector[returnvector < 0]) / n_runs) + probab
     
     
   }
+  #End outer IC-loop.
+  
   
 output_insurance = list(result_matrix,statistical_distributions)
 names(output_insurance) = c("Summary_Statistics", "Outcomes_Long_Format")
@@ -484,10 +487,10 @@ reinsurance_return_vector = sort(reinsurance_outcomes[[k]][["reinsurance_epoch_l
       }
 #Array is flipped so need to reflip 
 n_runs =  length(reinsurance_return_vector)
-adjusted_position = VaR_Position_ILS * 200
-VAR_position = n_runs - ceiling((n_runs / 200)* adjusted_position)
+adjusted_position = VaR_Position_ILS
+VAR_position = n_runs - ceiling(n_runs * adjusted_position)
 VaR <- reinsurance_return_vector[VAR_position] + VaR
-realized_result <- mean(reinsurance_return_vector)  
+realized_result <- mean(reinsurance_return_vector)  + realized_result
 probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_runs) + probability_of_loss
  
 }
@@ -497,7 +500,7 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
     reinsurance_premium_share = reinsurance_matrix[i,j] * output_insurance[[1]][5,j] + reinsurance_premium_share
     }
     reinsurance_result_matrix[1,i] = VaR / num_sim_runs
-    reinsurance_result_matrix[2,i] = realized_result / num_sim_runs
+    reinsurance_result_matrix[2,i] = realized_result /num_sim_runs
     reinsurance_result_matrix[3,i] = reinsurance_premium_share
     reinsurance_result_matrix[4,i] = reinsurance_premium_share / 0.7
     reinsurance_result_matrix[5,i] = probability_of_loss / num_sim_runs
@@ -512,12 +515,15 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
  ### fair price. To do that, add the respective VaR to the reinsurance matrix. First build an array
  ### Consisting of the RC number and VaR to map, then filter and map.
 
- reinsurance_var_array = data.frame(matrix(1:(2*num_rc), ncol = 2, nrow = num_rc))
- colnames(reinsurance_var_array) <- c("Number_RC", "VAR99.5")
+ reinsurance_var_array = data.frame(matrix(1:(3*num_rc), ncol = 3, nrow = num_rc))
+ colnames(reinsurance_var_array) <- c("Number_RC", "VAR99.5", "Effective_IW")
  for (i in 1:num_rc){
    reinsurance_var_array[i,1] = i
    reinsurance_var_array[i,2] = reinsurance_result_matrix[1,i]
+   reinsurance_var_array[i,3] = sum(reinsurance_matrix[i,] * output_insurance[[1]][1,]) *(-1)
+
  }
+
  
  reinsurance_var_array[,1] = sapply(reinsurance_var_array[,1], as.factor)
 
@@ -527,38 +533,53 @@ probability_of_loss = (length(returnvector[reinsurance_return_vector < 0]) / n_r
  colnames(bond_value) <- c("Number_RC", "Cyber_Bond_Value")
   bond_value[,1] = sapply(bond_value[,1], as.factor)
  
+ #New January 2024: Calculate the share of IW for the reinsurer by multiplying the reinsurance matrix by the repsective IWs of the primary companies
+ 
+
+ 
+  
 #Lookup VaR and Bond Value
  bond_outcomes =  statistical_distributions_reinsurance %>% left_join(reinsurance_var_array, by = c("Number_RC" = "Number_RC"), copy = T) %>% left_join(bond_value, by = c("Number_RC" = "Number_RC"), copy = T)
 
 
  #Calculate excess loss payout & residual (=PPP Scheme)
- bond_outcomes = bond_outcomes %>% group_by() %>% mutate(
+ bond_outcomes = bond_outcomes %>% group_by(Number_RC) %>% mutate(
    excess_var_loss = ifelse(VAR99.5 - as.numeric(Profit) > 0,VAR99.5 - as.numeric(Profit),0),
    bond_loss = ifelse(excess_var_loss > Cyber_Bond_Value, Cyber_Bond_Value,excess_var_loss),
    excess_uninsured_loss = excess_var_loss - bond_loss,
-  
+   excess_var_loss_IW = ifelse(Effective_IW - as.numeric(Profit) > 0,Effective_IW - as.numeric(Profit),0),
+   bond_loss_IW = ifelse(excess_var_loss_IW > Cyber_Bond_Value, Cyber_Bond_Value,excess_var_loss_IW),
+   excess_uninsured_loss_IW = ifelse(excess_var_loss_IW > Cyber_Bond_Value, Cyber_Bond_Value,excess_var_loss_IW)
    
  )
 #Rename VAR with the Correct VaR that is used.
  
 adjusted_Var_name = paste0("VAR",VaR_Position_ILS*100)
-names(bond_outcomes)[names(bond_outcomes) == 'VAR99.5'] <- "adjusted_Var_name" 
+names(bond_outcomes)[names(bond_outcomes) == 'VAR99.5'] <- adjusted_Var_name 
 
 #Calculate Bond Expected Losses. To get the EVs, group by the respectice Reinsurer (1 bond for 1 #reinsurer) and divide the sum of bond_losses by the number of simulation runs times the sample size
 # of the verification set (32k).
 
- 
+
  bond_statistics = bond_outcomes %>% ungroup() %>% group_by(Number_RC) %>% summarize(
    Cyber_Bond_Value = mean(Cyber_Bond_Value),
  absolute_expected_loss_bonds = mean(bond_loss),
+ absolute_expected_loss_bonds_IW = mean(bond_loss_IW),
  relative_expected_loss = mean(absolute_expected_loss_bonds/Cyber_Bond_Value),
+  relative_expected_loss_IW = mean(absolute_expected_loss_bonds_IW/Cyber_Bond_Value),
  sd_loss_bonds = sd(bond_loss),
+  sd_loss_bonds_IW = sd(bond_loss_IW),
  #Target Sharpe Ratio solved for coupon payments = TRSR * VAR + EV(Return) + Risk Free Rate
 coupon_payment = target_sharpe_ratio * sd_loss_bonds + absolute_expected_loss_bonds + risk_free_rate,
+coupon_payment_IW = target_sharpe_ratio * sd_loss_bonds_IW + absolute_expected_loss_bonds_IW + risk_free_rate,
 Return_On_Equity_Investors = coupon_payment/Cyber_Bond_Value,
+Return_On_Equity_Investors_IW = coupon_payment_IW/Cyber_Bond_Value,
 sum_uninsured_losses =  mean(excess_uninsured_loss),
+sum_uninsured_losses_IW = mean(excess_uninsured_loss_IW),
 Attatchment_Probability_Bond = mean(ifelse(bond_loss > 0,1,0)),
-Probability_of_excess_loss = mean(ifelse(excess_uninsured_loss > 0,1,0))
+Attatchment_Probability_Bond_IW = mean(ifelse(bond_loss_IW > 0,1,0)),
+Probability_of_excess_loss = mean(ifelse(excess_uninsured_loss > 0,1,0)),
+Probability_of_excess_loss_IW = mean(ifelse(sum_uninsured_losses_IW > 0,1,0))
  )
 
 
@@ -709,9 +730,7 @@ plot_matrix <- function(data) {
 }
 
 # Example usage
-test_outcome <- test_outcome2_constrained[[2]][[1]]
-plot <- plot_matrix(test_outcome)
-print(plot)
+
 ```
 
 
@@ -735,7 +754,9 @@ print(plot)
 
 #Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
 #nrow = number of reinsurers, ncol = number of insurerance companies.
-reinsurance_matrix_1 = rbind(rep(1,5),rep(1,5),rep(1,5),rep(1,5))
+reinsurance_matrix_1 = rbind(c(0,0,1,0,0),c(0,0,1,0,0),c(0,0,1,0,0),c(0,0,1,0,0))
+
+
 
 test_outcome1_unconstrained = calculate_insurance_outcomes(unconstrained_results[1,,,], verification_set, IW_array, 1)
 
@@ -755,7 +776,7 @@ test_outcome2_constrained = calculate_reinsurance_outcomes(constrained_results[1
 #ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
 
 bond_value_array = c(21,11,5.25,2.6) 
-bond_values_effiency_curve_ils = c(5000,5000	,1415.67,	707.83)
+bond_value_array = c(2000,5000,8000,10000)
 
 #ILS effectivness
 scenario_3_results_ils_unconstrained = calculate_reinsurance_ils_outcomes(unconstrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,0.7, 0.02)
@@ -766,6 +787,8 @@ scenario_3_results_ils_unconstrained_curve = calculate_reinsurance_ils_outcomes(
 scenario_3_results_ils_constrained_curve = calculate_reinsurance_ils_outcomes(constrained_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.02)
 
 #ILS Outcomes with Reinsurance Outcomes
+reinsurance_matrix_1 = rbind(rep(0.5,3),rep(0.5,3),rep(0.5,3),rep(0.5,3))
+
 scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(unconstrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.02,.995)
 scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.02,.995)
 
@@ -807,16 +830,19 @@ capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
 
 #Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
 #nrow = number of reinsurers, ncol = number of insurerance companies.
-reinsurance_matrix_1 = rbind(rep(0.4,5),rep(0.2,5),rep(0.1,5),rep(0.05,5))
 
-test_outcome1_unconstrained = calculate_insurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, 1)
+reinsurance_matrix_1 = rbind(rep(0.25,5),rep(0.25,5),rep(0.25,5),rep(0.25,5))
+reinsurance_matrix_1 = rbind(c(1,1,1),c(1,1,1),c(1,1,1))
+IW_array_var95 =  c(10e3,5e3,2.5e3)
 
-test_outcome1_constrained = calculate_insurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, 1)
+test_outcome1_unconstrained = calculate_insurance_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, 1)
+
+test_outcome1_constrained = calculate_insurance_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, 1)
 
 
-test_outcome2_unconstrained = calculate_reinsurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1, 0)
+test_outcome2_unconstrained = calculate_reinsurance_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1, 0)
 
-test_outcome2_constrained = calculate_reinsurance_outcomes(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1, 0)
+test_outcome2_constrained = calculate_reinsurance_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1, 0)
 
 #Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
 
@@ -827,46 +853,125 @@ test_outcome2_constrained = calculate_reinsurance_outcomes(var95.0_results[1,,,]
 #ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
 
 bond_value_array = c(21,10.5,5.25,2.6) 
-bond_values_effiency_curve_ils = c(7.273063e+03, 3.636531e+03, 1.818266e+03,	9.091329e+02)
+bond_values_effiency_curve_ils = c(2500,2500,2500)
+bond_value_array = c(5000,5000,5000)
 
 #ILS effectivness
-scenario_3_results_ils_unconstrained = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,0.7, 0.04)
-scenario_3_results_ils_constrained = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_value_array,0.7, 0.04)
+scenario_3_results_ils_unconstrained = calculate_reinsurance_ils_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_value_array,0.6, 0.04)
+scenario_3_results_ils_constrained = calculate_reinsurance_ils_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_value_array,0.6, 0.04)
 
 #ILS effectivness
-scenario_3_results_ils_unconstrained_curve = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04)
-scenario_3_results_ils_constrained_curve = calculate_reinsurance_ils_outcomes(var95.0_results[1,,,], verification_set, scenario_3_IW, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04)
+scenario_3_results_ils_unconstrained_curve = calculate_reinsurance_ils_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04)
+scenario_3_results_ils_constrained_curve = calculate_reinsurance_ils_outcomes(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04)
 
 #ILS Outcomes with Reinsurance Outcomes
-scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.04,.95)
-scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.04,.95)
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_value_array,0.6, 0.04,.95)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_value_array,0.6, 0.04,.95)
 
 #ILS Outcomes with Reinsurance Outcomes
-scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04,.95)
-scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.7, 0.04,.95)
-
-
-#There was a typo in the capital_curve_results, misspelled with an extra s. Adjust in this line:
-
-capital_curve_new = capital_curve_resuslts
-
-dim_cc = dim(capital_curve_new)[[1]]
-capital_curve_pseudo_array = array(dim = c(dim(capital_curve_new)[[2]],dim(capital_curve_new)[[3]],2)) 
-
-capital_curve_overview = matrix(nrow = 7, ncol = dim_cc)
-
-for (i in 1:dim_cc){
-  #Calculate Value and bind to new frame. First seed the pseudo array with the double rows and return
-  capital_curve_pseudo_array[,,1] = capital_curve_new[i,,,]
-  capital_curve_pseudo_array[,,2] = capital_curve_new[i,,,]
-  current_values_cc = calculate_insurance_outcomes(capital_curve_pseudo_array, verification_set, IW_array[i], 1)
-capital_curve_overview[,i] = cbind(current_values_cc[[1]][,1])
-  
-}
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04,.95)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var95.0_data[1,,,], verification_set, IW_array_var95, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04,.95)
 
 
 ```
 
+```{r}
 
+#Start Analysis Jan 2024, Value at riskis is at 95% insteadof 99.5%.
+#unconstrained_results 
+#constrained_results
+#capital_curve_new 
+#IW_array = c(1e4, 5e3, 2.5e3,1e3,5e2)
+
+
+#Reinsurance Matrix 1: 4 Reinsurers, 40%, 20%, 10%, 5% quota share with all insurers.
+#nrow = number of reinsurers, ncol = number of insurerance companies.
+
+reinsurance_matrix_1 = rbind(rep(0.25,5),rep(0.25,5),rep(0.25,5),rep(0.25,5))
+reinsurance_matrix_1 = rbind(c(1,1,1),c(1,1,1),c(1,1,1))
+IW_array_var90 =  c(10e3,5e3,2.5e3)
+
+test_outcome1_unconstrained = calculate_insurance_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, 1)
+
+test_outcome1_constrained = calculate_insurance_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, 1)
+
+
+test_outcome2_unconstrained = calculate_reinsurance_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1, 0)
+
+test_outcome2_constrained = calculate_reinsurance_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1, 0)
+
+test_1  = calculate_reinsurance_ils_hypothetical_bond_outcome(constrained_results[1,,,], verification_set, IW_array, reinsurance_matrix_1,bond_value_array,0.7, 0.02,.995)
+
+
+test_1 = calculate_reinsurance_ils_hypothetical_bond_outcome_bulk(constrained_results[1,,,], verification_set, IW_array, list(reinsurance_matrix_1,reinsurance_matrix_2,reinsurance_matrix_3),list(bond_value_array,bond_value_array_2,bond_value_array_3),c(0.6,0.65,0.7), 0.02,.995)
+
+
+calculate_reinsurance_ils_hypothetical_bond_outcome_bulk <- function(weights, verification_set, initial_wealth_array, reinsurance_matrix, bond_value,target_sharpe_ratio, risk_free_rate) {
+  #First build the result table, by checking the lengths of the paramters.
+  
+  number_rows = length(bond_value)
+  number_cols = length(target_sharpe_ratio)
+  number_tables = length(reinsurance_matrix_1)
+  
+  result_array = array(number_rows,number_cols,number_tables)
+ 
+#Outer Loop for full tables
+  
+  for (i in number_tables) {
+    
+#Inner Loop for cols
+    
+    for (j in number_cols) {
+      
+    }
+     for (k in number_rows) {
+       
+  result_array[k,j,i] =   calculate_reinsurance_ils_hypothetical_bond_outcome(weights, verification_set, initial_wealth_array, reinsurance_matrix[number_tables], bond_value[number_rows],target_sharpe_ratio[number_cols], risk_free_rate)$`ILS Outcomes`[[1]]$coupon_payment[1]
+       
+       
+     }
+    
+    
+  }
+
+  
+  
+  
+}
+
+
+
+
+
+#Scenario 2 is called capital_curve. Only one Insurance Company per setup, however, multiple simulations. So we need to loop and extract the stuff we want from it 
+
+#Dimension of capital curve, first is number of IW_setups, which gives us the duartion of the loop We need to explicitly declare the array, because if else, the last (4th) dimension of the original array gets wiped. So we just double the array, and just take the first value.
+
+
+
+#ILS Scenario 3: Constrained Optimization: 5 Insurance Companies, First and Second constrained to Large, Third to Med, Fourth and Fifth Small & Med. Declare bond_array, with nominal values for the 4 reinsurers. Take 0.25 of VaR as start value
+
+bond_value_array = c(21,10.5,5.25,2.6) 
+bond_values_effiency_curve_ils = c(500,1000,2500)
+bond_value_array =c(2500,2500,2500)
+
+#ILS effectivness
+scenario_3_results_ils_unconstrained = calculate_reinsurance_ils_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_value_array,0.6, 0.04)
+scenario_3_results_ils_constrained = calculate_reinsurance_ils_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_value_array,0.6, 0.04)
+
+#ILS effectivness
+scenario_3_results_ils_unconstrained_curve = calculate_reinsurance_ils_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04)
+scenario_3_results_ils_constrained_curve = calculate_reinsurance_ils_outcomes(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04)
+
+#ILS Outcomes with Reinsurance Outcomes
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_value_array,0.6, 0.04,.90)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_value_array,0.6, 0.04,.90)
+
+#ILS Outcomes with Reinsurance Outcomes
+scenario_3_results_ils_RP200_unconstrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04,.90)
+scenario_3_results_ils_RP200_constrained = calculate_reinsurance_ils_hypothetical_bond_outcome(var90.0_data[1,,,], verification_set, IW_array_var90, reinsurance_matrix_1,bond_values_effiency_curve_ils,0.6, 0.04,.90)
+
+test_1
+```
 
 
